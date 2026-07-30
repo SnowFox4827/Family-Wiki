@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 3. DOM Elements
   const els = {
+    sidebar: document.querySelector(".sidebar"),
+    sidebarToggleBtn: document.getElementById("sidebar-toggle-btn"),
     categoryTree: document.getElementById("category-tree"),
     recentList: document.getElementById("recent-list"),
     categoryOptions: document.getElementById("category-options"),
@@ -56,6 +58,15 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput: els.imageUploadInput,
     statusEl: els.uploadStatus,
   });
+
+  // 4.1 Sidebar Collapse Toggle
+  if (els.sidebarToggleBtn) {
+    els.sidebarToggleBtn.addEventListener("click", () => {
+      if (!els.sidebar) return;
+      const collapsed = els.sidebar.classList.toggle("collapsed");
+      localStorage.setItem("sidebar-collapsed", collapsed ? "true" : "false");
+    });
+  }
 
   // 5. Views Management
   function showView(name) {

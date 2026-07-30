@@ -214,6 +214,13 @@ button, input, textarea {
 /* Sidebar */
 /* ---------------------------------------------------------------- */
 
+.sidebar-toggle {
+  padding: 4px 8px;
+  font-size: 1.1rem;
+  margin-right: 4px;
+  color: #FBF7EC;
+}
+
 .sidebar {
   flex: 0 0 260px;
   background: var(--sidebar-bg);
@@ -221,6 +228,16 @@ button, input, textarea {
   padding: 20px 16px 24px;
   overflow-y: auto;
   border-right: 1px solid rgba(0,0,0,0.2);
+  transition: flex-basis 0.25s ease, margin-left 0.25s ease, padding 0.25s ease, max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.sidebar.collapsed {
+  flex: 0 0 0px;
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  border-right: none;
 }
 
 .sidebar-section-label {
@@ -654,11 +671,24 @@ button, input, textarea {
     border-right: none;
     border-bottom: 1px solid rgba(0,0,0,0.2);
   }
+  .sidebar.collapsed {
+    max-height: 0;
+    padding: 0;
+    border-bottom: none;
+  }
   .topbar { flex-wrap: wrap; gap: 10px; }
   .search-wrap { order: 3; max-width: none; flex: 1 1 100%; }
   .editor-row-split { grid-template-columns: 1fr; }
   .ledger-body { padding: 28px 22px 16px; }
   .ledger-actions { padding: 16px 22px 24px; }
+}
+
+@media (max-width: 480px) {
+  .ledger-page { padding-left: 16px; padding-right: 16px; }
+  .topbar-brand { font-size: 1.15rem; }
+  .editor-label-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .editor-actions { flex-direction: column; }
+  .editor-actions .btn { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
