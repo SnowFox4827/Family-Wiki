@@ -91,23 +91,65 @@ button, input, textarea {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 22px;
   margin-left: auto;
 }
 
-.theme-toggle {
+.theme-switch {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  color: #FBF7EC;
-  font-size: 1.1rem;
-  border-color: rgba(251, 247, 236, 0.25);
-  border-radius: 4px;
+  width: 64px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(251, 247, 236, 0.18);
+  cursor: pointer;
+  flex: 0 0 auto;
 }
-.theme-toggle:hover {
-  background: rgba(251, 247, 236, 0.15);
-  border-color: rgba(251, 247, 236, 0.4);
+
+.theme-switch:hover {
+  background: rgba(251, 247, 236, 0.26);
+}
+
+.theme-switch-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translate(-50%, -50%);
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-flex;
+  opacity: 0.7;
+}
+
+.theme-switch-icon-sun { left: 14px; }
+.theme-switch-icon-moon { left: 50px; }
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+[data-theme="dark"] .theme-switch {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .theme-switch:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .theme-switch-thumb {
+  transform: translateX(36px);
+  background: var(--gold-light);
 }
 
 .brand {
@@ -214,11 +256,22 @@ button, input, textarea {
 /* Sidebar */
 /* ---------------------------------------------------------------- */
 
-.sidebar-toggle {
-  padding: 4px 8px;
-  font-size: 1.1rem;
-  margin-right: 4px;
+.topbar .sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
   color: #FBF7EC;
+  font-size: 1.15rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.topbar .sidebar-toggle:hover {
+  background: rgba(251, 247, 236, 0.15);
 }
 
 .sidebar {

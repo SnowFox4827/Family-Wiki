@@ -4,14 +4,10 @@
 
 export function initTheme() {
   const toggleBtn = document.getElementById("theme-toggle-btn");
-  const toggleIcon = document.getElementById("theme-toggle-icon");
 
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("wiki-theme", theme);
-    if (toggleIcon) {
-      toggleIcon.textContent = theme === "dark" ? "☀️" : "🌙";
-    }
   }
 
   const savedTheme = localStorage.getItem("wiki-theme");
