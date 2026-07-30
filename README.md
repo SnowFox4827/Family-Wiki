@@ -97,15 +97,28 @@ family_wiki/
 ├── app.py                 Flask app + REST API + SQLite setup
 ├── requirements.txt
 ├── Dockerfile             Docker configuration
+├── .dockerignore         Docker ignore rules
 ├── docker-compose.yml     Docker Compose setup (port 5005)
 ├── data/
 │   ├── wiki.db            SQLite database (created on first run)
 │   └── uploads/           Uploaded photos and images
 ├── templates/
-│   └── index.html         Single-page app template
+│   ├── index.html         Main single-page app layout
+│   └── components/        Modular HTML partials
+│       ├── topbar.html    Header & search bar
+│       ├── sidebar.html   Category shelf & recent pages
+│       ├── view_page.html Reading view
+│       ├── view_editor.html Editor form & upload bar
+│       └── view_empty.html Empty state view
 └── static/
     ├── css/style.css       Theme styles (Light & Dark modes)
-    └── js/app.js           Frontend app logic & image upload handlers
+    └── js/
+        ├── app.js         Main entry point & state coordinator
+        └── modules/       ES modules by responsibility
+            ├── api.js     REST API calls
+            ├── theme.js   Light/Dark mode toggle
+            ├── markdown.js Markdown & wiki link parser
+            └── upload.js  Image upload handlers
 ```
 
 ## API reference

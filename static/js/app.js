@@ -1,26 +1,28 @@
-(() => {
-  "use strict";
+// -------------------------------------------------------------
+// Main Application Module
+// -------------------------------------------------------------
+import * as API from "./modules/api.js";
+import { initTheme } from "./modules/theme.js";
+import { renderMarkdown, escapeHtml } from "./modules/markdown.js";
+import { setupImageUpload } from "./modules/upload.js";
 
-  const state = {
-    pages: [],        // lightweight list (no content)
-    currentPage: null, // full page object when viewing/editing
-    editingId: null,   // id being edited, or null for "new"
-  };
+document.addEventListener("DOMContentLoaded", () => {
+  // 1. Initialize Theme
+  initTheme();
 
-  // -------------------------------------------------------------
-  // DOM refs
-  // -------------------------------------------------------------
+  // 2. Application State
+  let currentPage = null;
+  let allPages = [];
+  const titleToId = new Map();
+
+  // 3. DOM Elements
   const els = {
     categoryTree: document.getElementById("category-tree"),
     recentList: document.getElementById("recent-list"),
-    searchInput: document.getElementById("search-input"),
-    searchResults: document.getElementById("search-results"),
-    searchWrap: document.querySelector(".search-wrap"),
-
+    categoryOptions: document.getElementById("category-options"),
     viewPage: document.getElementById("view-page"),
     viewEmpty: document.getElementById("view-empty"),
     viewEditor: document.getElementById("view-editor"),
-
     pageTab: document.getElementById("page-tab"),
     pageCategory: document.getElementById("page-category"),
     pageTags: document.getElementById("page-tags"),
@@ -28,477 +30,334 @@
     pageAuthor: document.getElementById("page-author"),
     pageUpdated: document.getElementById("page-updated"),
     pageContent: document.getElementById("page-content"),
-
+    newPageBtn: document.getElementById("new-page-btn"),
+    emptyNewPageBtn: document.getElementById("empty-new-page-btn"),
+    editPageBtn: document.getElementById("edit-page-btn"),
+    deletePageBtn: document.getElementById("delete-page-btn"),
+    cancelEditBtn: document.getElementById("cancel-edit-btn"),
     editorForm: document.getElementById("editor-form"),
     fieldTitle: document.getElementById("field-title"),
     fieldCategory: document.getElementById("field-category"),
     fieldTags: document.getElementById("field-tags"),
     fieldAuthor: document.getElementById("field-author"),
     fieldContent: document.getElementById("field-content"),
-    categoryOptions: document.getElementById("category-options"),
-
-    newPageBtn: document.getElementById("new-page-btn"),
-    emptyNewPageBtn: document.getElementById("empty-new-page-btn"),
-    editPageBtn: document.getElementById("edit-page-btn"),
-    deletePageBtn: document.getElementById("delete-page-btn"),
-    cancelEditBtn: document.getElementById("cancel-edit-btn"),
+    searchInput: document.getElementById("search-input"),
+    searchResults: document.getElementById("search-results"),
+    searchWrap: document.querySelector(".search-wrap"),
+    uploadImageBtn: document.getElementById("upload-image-btn"),
+    imageUploadInput: document.getElementById("image-upload-input"),
+    uploadStatus: document.getElementById("upload-status"),
   };
 
-  // A palette cycled per category for the little sidebar dots / tab color.
-  const TAB_COLORS = ["#B8863B", "#8C4A34", "#1F3B2C", "#5B7B6C", "#A5673F", "#3E5C48"];
-  function colorForCategory(name) {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-    return TAB_COLORS[hash % TAB_COLORS.length];
-  }
+  // 4. Setup Image Upload Handlers
+  setupImageUpload({
+    contentTextarea: els.fieldContent,
+    uploadBtn: els.uploadImageBtn,
+    fileInput: els.imageUploadInput,
+    statusEl: els.uploadStatus,
+  });
 
-  // -------------------------------------------------------------
-  // API helpers
-  // -------------------------------------------------------------
-  async function api(path, options = {}) {
-    const res = await fetch(path, {
-      headers: { "Content-Type": "application/json" },
-      ...options,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || "Something went wrong");
-    }
-    return data;
-  }
-
-  const fetchPages = () => api("/api/pages");
-  const fetchPage = (id) => api(`/api/pages/${id}`);
-  const createPage = (payload) => api("/api/pages", { method: "POST", body: JSON.stringify(payload) });
-  const updatePage = (id, payload) => api(`/api/pages/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-  const deletePageApi = (id) => api(`/api/pages/${id}`, { method: "DELETE" });
-  const searchPages = (q) => api(`/api/search?q=${encodeURIComponent(q)}`);
-
-  // -------------------------------------------------------------
-  // Rendering: sidebar
-  // -------------------------------------------------------------
-  function groupByCategory(pages) {
-    const groups = new Map();
-    for (const p of pages) {
-      if (!groups.has(p.category)) groups.set(p.category, []);
-      groups.get(p.category).push(p);
-    }
-    return groups;
-  }
-
-  function renderSidebar() {
-    const groups = groupByCategory(state.pages);
-    const categories = [...groups.keys()].sort((a, b) => a.localeCompare(b));
-
-    els.categoryTree.innerHTML = "";
-    for (const cat of categories) {
-      const pages = groups.get(cat).sort((a, b) => a.title.localeCompare(b.title));
-      const li = document.createElement("li");
-      li.className = "category-node";
-
-      const header = document.createElement("div");
-      header.className = "category-header";
-      header.innerHTML = `
-        <span class="category-name">${escapeHtml(cat)}</span>
-        <span class="category-count">${pages.length}</span>
-      `;
-      header.style.borderLeftColor = colorForCategory(cat);
-
-      const branch = document.createElement("ul");
-      branch.className = "page-branch-list";
-      for (const p of pages) {
-        const item = document.createElement("li");
-        item.className = "page-branch-item";
-        const a = document.createElement("a");
-        a.href = "#";
-        a.textContent = p.title;
-        a.dataset.id = p.id;
-        if (state.currentPage && state.currentPage.id === p.id) a.classList.add("active");
-        a.addEventListener("click", (e) => { e.preventDefault(); openPage(p.id); });
-        item.appendChild(a);
-        branch.appendChild(item);
-      }
-
-      header.addEventListener("click", () => {
-        branch.classList.toggle("hidden");
-        header.classList.toggle("active");
-      });
-
-      li.appendChild(header);
-      li.appendChild(branch);
-      els.categoryTree.appendChild(li);
-    }
-
-    // Recently updated (top 8)
-    const recent = [...state.pages]
-      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-      .slice(0, 8);
-    els.recentList.innerHTML = "";
-    for (const p of recent) {
-      const li = document.createElement("li");
-      const a = document.createElement("a");
-      a.href = "#";
-      a.textContent = p.title;
-      a.addEventListener("click", (e) => { e.preventDefault(); openPage(p.id); });
-      li.appendChild(a);
-      els.recentList.appendChild(li);
-    }
-
-    // Keep the category datalist in the editor fresh
-    els.categoryOptions.innerHTML = categories
-      .map((c) => `<option value="${escapeAttr(c)}"></option>`)
-      .join("");
-  }
-
-  // -------------------------------------------------------------
-  // Rendering: content (very small markdown-ish + wiki-link parser)
-  // -------------------------------------------------------------
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-  function escapeAttr(str) {
-    return escapeHtml(str).replace(/"/g, "&quot;");
-  }
-
-  function renderContent(raw) {
-    const titleToId = new Map(state.pages.map((p) => [p.title.toLowerCase(), p.id]));
-    const lines = (raw || "").split("\n");
-    let html = "";
-    let inList = false;
-
-    const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
-
-    for (let line of lines) {
-      if (/^###\s+/.test(line)) { closeList(); html += `<h3>${inlineFormat(escapeHtml(line.replace(/^###\s+/, "")))}</h3>`; continue; }
-      if (/^##\s+/.test(line)) { closeList(); html += `<h2>${inlineFormat(escapeHtml(line.replace(/^##\s+/, "")))}</h2>`; continue; }
-      if (/^#\s+/.test(line)) { closeList(); html += `<h1>${inlineFormat(escapeHtml(line.replace(/^#\s+/, "")))}</h1>`; continue; }
-      if (/^-\s+/.test(line)) {
-        if (!inList) { html += "<ul>"; inList = true; }
-        html += `<li>${inlineFormat(escapeHtml(line.replace(/^-\s+/, "")))}</li>`;
-        continue;
-      }
-      closeList();
-      if (line.trim() === "") { continue; }
-      html += `<p>${inlineFormat(escapeHtml(line))}</p>`;
-    }
-    closeList();
-    return html;
-
-    function inlineFormat(text) {
-      text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (m, alt, url) => {
-        return `<img src="${escapeAttr(url.trim())}" alt="${escapeAttr(alt.trim())}" class="page-image" />`;
-      });
-      text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
-      text = text.replace(/\[\[(.+?)\]\]/g, (m, name) => {
-        const unescapedName = name.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
-        const id = titleToId.get(unescapedName.trim().toLowerCase());
-        if (id) return `<a href="#" class="wiki-link" data-id="${id}">${name}</a>`;
-        return `<a href="#" class="wiki-link missing" data-new-title="${escapeAttr(unescapedName)}">${name}</a>`;
-      });
-      return text;
-    }
-  }
-
-  function attachWikiLinkHandlers(container) {
-    container.querySelectorAll("a.wiki-link").forEach((a) => {
-      a.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (a.dataset.id) {
-          openPage(Number(a.dataset.id));
-        } else if (a.dataset.newTitle) {
-          openEditor(null, { title: a.dataset.newTitle });
-        }
-      });
-    });
-  }
-
-  function formatDate(iso) {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) +
-        " " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-    } catch {
-      return iso;
-    }
-  }
-
-  // -------------------------------------------------------------
-  // View switching
-  // -------------------------------------------------------------
+  // 5. Views Management
   function showView(name) {
     els.viewPage.classList.toggle("hidden", name !== "page");
     els.viewEmpty.classList.toggle("hidden", name !== "empty");
     els.viewEditor.classList.toggle("hidden", name !== "editor");
   }
 
-  async function openPage(id) {
+  // 6. Data Loading & Indexing
+  async function refreshIndex() {
     try {
-      const page = await fetchPage(id);
-      state.currentPage = page;
-      els.pageTab.style.background = colorForCategory(page.category);
-      els.pageCategory.textContent = page.category;
-      els.pageTags.innerHTML = page.tags.map((t) => `<span class="chip chip-tag">#${escapeHtml(t)}</span>`).join("");
-      els.pageTitle.textContent = page.title;
-      els.pageAuthor.textContent = page.author ? `Written by ${page.author}` : "";
-      els.pageUpdated.textContent = `Updated ${formatDate(page.updated_at)}`;
-      els.pageContent.innerHTML = renderContent(page.content);
-      attachWikiLinkHandlers(els.pageContent);
-      showView("page");
+      allPages = await API.fetchPages();
+      titleToId.clear();
+      allPages.forEach((p) => {
+        titleToId.set(p.title.trim().toLowerCase(), p.id);
+      });
       renderSidebar();
-      window.scrollTo({ top: 0 });
+      renderCategoryOptions();
     } catch (err) {
-      alert(err.message);
+      console.error("Index refresh failed:", err);
     }
   }
 
-  function openEditor(id, prefill) {
-    state.editingId = id;
-    if (id && state.currentPage && state.currentPage.id === id) {
-      const p = state.currentPage;
-      els.fieldTitle.value = p.title;
-      els.fieldCategory.value = p.category;
-      els.fieldTags.value = p.tags.join(", ");
-      els.fieldAuthor.value = p.author || "";
-      els.fieldContent.value = p.content;
+  function renderCategoryOptions() {
+    if (!els.categoryOptions) return;
+    const categories = new Set();
+    allPages.forEach((p) => {
+      if (p.category) categories.add(p.category);
+    });
+    els.categoryOptions.innerHTML = Array.from(categories)
+      .map((c) => `<option value="${escapeHtml(c)}">`)
+      .join("");
+  }
+
+  function renderSidebar() {
+    // Categories Tree
+    const tree = {};
+    const unassigned = [];
+
+    allPages.forEach((p) => {
+      if (!p.category) {
+        unassigned.push(p);
+      } else {
+        tree[p.category] = tree[p.category] || [];
+        tree[p.category].push(p);
+      }
+    });
+
+    let html = "";
+    Object.keys(tree).sort().forEach((cat) => {
+      const count = tree[cat].length;
+      html += `<li class="category-node">`;
+      html += `<div class="category-header"><span class="category-name">📁 ${escapeHtml(cat)}</span><span class="category-count">${count}</span></div>`;
+      html += `<ul class="page-branch-list">`;
+      tree[cat].forEach((p) => {
+        const active = currentPage && currentPage.id === p.id ? "active" : "";
+        html += `<li class="page-branch-item"><a href="#" class="page-link ${active}" data-id="${p.id}">${escapeHtml(p.title)}</a></li>`;
+      });
+      html += `</ul></li>`;
+    });
+
+    if (unassigned.length > 0) {
+      html += `<li class="category-node">`;
+      html += `<div class="category-header"><span class="category-name">Uncategorized</span><span class="category-count">${unassigned.length}</span></div>`;
+      html += `<ul class="page-branch-list">`;
+      unassigned.forEach((p) => {
+        const active = currentPage && currentPage.id === p.id ? "active" : "";
+        html += `<li class="page-branch-item"><a href="#" class="page-link ${active}" data-id="${p.id}">${escapeHtml(p.title)}</a></li>`;
+      });
+      html += `</ul></li>`;
+    }
+
+    els.categoryTree.innerHTML = html;
+
+    // Recent list
+    const sorted = [...allPages].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    els.recentList.innerHTML = sorted
+      .slice(0, 6)
+      .map((p) => {
+        const active = currentPage && currentPage.id === p.id ? "active" : "";
+        return `<li><a href="#" class="page-link ${active}" data-id="${p.id}">${escapeHtml(p.title)}</a></li>`;
+      })
+      .join("");
+  }
+
+  // 7. Page Display & Routing
+  async function openPage(id) {
+    try {
+      currentPage = await API.fetchPage(id);
+      renderPage(currentPage);
+      showView("page");
+      renderSidebar();
+    } catch (err) {
+      alert("Error loading page: " + err.message);
+    }
+  }
+
+  function renderPage(page) {
+    if (els.pageTab) els.pageTab.textContent = "";
+    els.pageTitle.textContent = page.title;
+    els.pageCategory.textContent = page.category || "General";
+    els.pageAuthor.textContent = page.author ? `Written by ${page.author}` : "Written anonymously";
+
+    if (page.updated_at) {
+      const dt = new Date(page.updated_at);
+      els.pageUpdated.textContent = " • " + dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
     } else {
-      els.fieldTitle.value = (prefill && prefill.title) || "";
+      els.pageUpdated.textContent = "";
+    }
+
+    if (page.tags) {
+      const tagList = Array.isArray(page.tags)
+        ? page.tags
+        : typeof page.tags === "string"
+        ? page.tags.split(",")
+        : [];
+      const cleanTags = tagList.map((t) => String(t).trim()).filter(Boolean);
+      els.pageTags.innerHTML = cleanTags.map((t) => `<span class="chip chip-tag">#${escapeHtml(t)}</span>`).join(" ");
+    } else {
+      els.pageTags.innerHTML = "";
+    }
+
+    els.pageContent.innerHTML = renderMarkdown(page.content, titleToId);
+  }
+
+  function openEditor(page = null, initialTitle = "") {
+    currentPage = page;
+    if (page) {
+      els.fieldTitle.value = page.title || "";
+      els.fieldCategory.value = page.category || "";
+      els.fieldTags.value = Array.isArray(page.tags) ? page.tags.join(", ") : page.tags || "";
+      els.fieldAuthor.value = page.author || "";
+      els.fieldContent.value = page.content || "";
+    } else {
+      els.fieldTitle.value = initialTitle;
       els.fieldCategory.value = "";
       els.fieldTags.value = "";
-      els.fieldAuthor.value = state.currentPage ? (state.currentPage.author || "") : "";
+      els.fieldAuthor.value = "";
       els.fieldContent.value = "";
     }
     showView("editor");
     els.fieldTitle.focus();
   }
 
-  // -------------------------------------------------------------
-  // Events
-  // -------------------------------------------------------------
-  els.newPageBtn.addEventListener("click", () => openEditor(null));
-  els.emptyNewPageBtn.addEventListener("click", () => openEditor(null));
-  els.editPageBtn.addEventListener("click", () => openEditor(state.currentPage.id));
-  els.cancelEditBtn.addEventListener("click", () => {
-    if (state.currentPage) showView("page"); else showView("empty");
-  });
+  // 8. Event Listeners
+  if (els.newPageBtn) els.newPageBtn.addEventListener("click", () => openEditor(null));
+  if (els.emptyNewPageBtn) els.emptyNewPageBtn.addEventListener("click", () => openEditor(null));
 
-  els.deletePageBtn.addEventListener("click", async () => {
-    if (!state.currentPage) return;
-    if (!confirm(`Delete "${state.currentPage.title}"? This can't be undone.`)) return;
-    try {
-      await deletePageApi(state.currentPage.id);
-      state.currentPage = null;
-      await refreshPages();
-      showView("empty");
-    } catch (err) {
-      alert(err.message);
-    }
-  });
+  if (els.editPageBtn) {
+    els.editPageBtn.addEventListener("click", () => {
+      if (currentPage) openEditor(currentPage);
+    });
+  }
 
-  els.editorForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const payload = {
-      title: els.fieldTitle.value.trim(),
-      category: els.fieldCategory.value.trim() || "Uncategorized",
-      tags: els.fieldTags.value.split(",").map((t) => t.trim()).filter(Boolean),
-      author: els.fieldAuthor.value.trim(),
-      content: els.fieldContent.value,
-    };
-    if (!payload.title) return;
-
-    try {
-      let page;
-      if (state.editingId) {
-        page = await updatePage(state.editingId, payload);
+  if (els.cancelEditBtn) {
+    els.cancelEditBtn.addEventListener("click", () => {
+      if (currentPage) {
+        showView("page");
       } else {
-        page = await createPage(payload);
+        showView("empty");
       }
-      await refreshPages();
-      await openPage(page.id);
-    } catch (err) {
-      alert(err.message);
-    }
-  });
+    });
+  }
 
-  // Search
-  let searchDebounce = null;
-  els.searchInput.addEventListener("input", () => {
-    clearTimeout(searchDebounce);
-    const q = els.searchInput.value.trim();
-    if (!q) { els.searchResults.classList.add("hidden"); return; }
-    searchDebounce = setTimeout(async () => {
+  if (els.deletePageBtn) {
+    els.deletePageBtn.addEventListener("click", async () => {
+      if (!currentPage) return;
+      if (confirm(`Are you sure you want to delete "${currentPage.title}"?`)) {
+        try {
+          await API.deletePage(currentPage.id);
+          currentPage = null;
+          await refreshIndex();
+          showView("empty");
+        } catch (err) {
+          alert("Failed to delete page: " + err.message);
+        }
+      }
+    });
+  }
+
+  if (els.editorForm) {
+    els.editorForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        title: els.fieldTitle.value.trim(),
+        category: els.fieldCategory.value.trim(),
+        tags: els.fieldTags.value.trim(),
+        author: els.fieldAuthor.value.trim(),
+        content: els.fieldContent.value,
+      };
+
       try {
-        const results = await searchPages(q);
-        renderSearchResults(results);
+        let saved;
+        if (currentPage && currentPage.id) {
+          saved = await API.updatePage(currentPage.id, payload);
+        } else {
+          saved = await API.createPage(payload);
+        }
+        await refreshIndex();
+        openPage(saved.id);
       } catch (err) {
-        console.error(err);
+        alert(err.message);
       }
-    }, 180);
-  });
+    });
+  }
 
+  // Links & Navigation handling
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".search-wrap")) {
+    // Sidebar & Recent links
+    const pageLink = e.target.closest(".page-link");
+    if (pageLink) {
+      e.preventDefault();
+      const id = pageLink.getAttribute("data-id");
+      if (id) openPage(id);
+      return;
+    }
+
+    // Existing Wiki Links [[Page Title]]
+    const wikiLink = e.target.closest(".wiki-link:not(.missing)");
+    if (wikiLink) {
+      e.preventDefault();
+      const id = wikiLink.getAttribute("data-id");
+      if (id) openPage(id);
+      return;
+    }
+
+    // Missing Wiki Links
+    const missingLink = e.target.closest(".wiki-link.missing");
+    if (missingLink) {
+      e.preventDefault();
+      const newTitle = missingLink.getAttribute("data-new-title");
+      openEditor(null, newTitle || "");
+      return;
+    }
+
+    // Search Results links
+    const searchItem = e.target.closest(".search-item");
+    if (searchItem) {
+      e.preventDefault();
+      const id = searchItem.getAttribute("data-id");
+      if (id) {
+        els.searchResults.classList.add("hidden");
+        els.searchInput.value = "";
+        openPage(id);
+      }
+      return;
+    }
+
+    // Dismiss search results when clicking outside
+    if (els.searchWrap && !els.searchWrap.contains(e.target)) {
       els.searchResults.classList.add("hidden");
     }
   });
 
-  function renderSearchResults(results) {
-    if (results.length === 0) {
-      els.searchResults.innerHTML = `<div class="search-empty">No pages match.</div>`;
-    } else {
-      els.searchResults.innerHTML = results.map((p) => `
-        <button type="button" class="search-result-item" data-id="${p.id}">
-          <div class="search-result-title">${escapeHtml(p.title)}</div>
-          <div class="search-result-meta">${escapeHtml(p.category)}</div>
-        </button>
-      `).join("");
-      els.searchResults.querySelectorAll(".search-result-item").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          openPage(Number(btn.dataset.id));
-          els.searchResults.classList.add("hidden");
-          els.searchInput.value = "";
-        });
-      });
-    }
-    els.searchResults.classList.remove("hidden");
-  }
-
-  // -------------------------------------------------------------
-  // Image Upload Logic
-  // -------------------------------------------------------------
-  const uploadImageBtn = document.getElementById("upload-image-btn");
-  const imageUploadInput = document.getElementById("image-upload-input");
-  const uploadStatus = document.getElementById("upload-status");
-
-  function insertAtCursor(textarea, text) {
-    const start = textarea.selectionStart || 0;
-    const end = textarea.selectionEnd || 0;
-    const val = textarea.value;
-    textarea.value = val.substring(0, start) + text + val.substring(end);
-    textarea.selectionStart = textarea.selectionEnd = start + text.length;
-    textarea.focus();
-  }
-
-  async function handleImageUpload(file) {
-    if (!file) return;
-    if (uploadStatus) {
-      uploadStatus.textContent = "Uploading image...";
-      uploadStatus.classList.remove("hidden");
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-
-      const markdown = `\n![${data.original_name || "Image"}](${data.url})\n`;
-      insertAtCursor(els.fieldContent, markdown);
-      if (uploadStatus) {
-        uploadStatus.textContent = "Image uploaded successfully!";
-        setTimeout(() => uploadStatus.classList.add("hidden"), 3000);
+  // Search input handler with debounce
+  let searchTimeout = null;
+  if (els.searchInput) {
+    els.searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimeout);
+      const q = els.searchInput.value.trim();
+      if (!q) {
+        els.searchResults.classList.add("hidden");
+        return;
       }
-    } catch (err) {
-      if (uploadStatus) {
-        uploadStatus.textContent = `Upload error: ${err.message}`;
-      } else {
-        alert(`Upload error: ${err.message}`);
-      }
-    } finally {
-      if (imageUploadInput) imageUploadInput.value = "";
-    }
-  }
 
-  if (uploadImageBtn && imageUploadInput) {
-    uploadImageBtn.addEventListener("click", () => imageUploadInput.click());
-    imageUploadInput.addEventListener("change", (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleImageUpload(e.target.files[0]);
-      }
-    });
-  }
-
-  if (els.fieldContent) {
-    els.fieldContent.addEventListener("paste", (e) => {
-      const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (item.type.indexOf("image") === 0) {
-          const file = item.getAsFile();
-          if (file) {
-            e.preventDefault();
-            handleImageUpload(file);
-            break;
+      searchTimeout = setTimeout(async () => {
+        try {
+          const results = await API.searchPages(q);
+          if (results.length === 0) {
+            els.searchResults.innerHTML = `<div class="search-empty">No results found</div>`;
+          } else {
+            els.searchResults.innerHTML = results
+              .map(
+                (p) => `
+                <a href="#" class="search-result-item search-item" data-id="${p.id}">
+                  <div class="search-result-title">${escapeHtml(p.title)}</div>
+                  <div class="search-result-meta">${escapeHtml(p.category || "General")}</div>
+                </a>
+              `
+              )
+              .join("");
           }
+          els.searchResults.classList.remove("hidden");
+        } catch (err) {
+          console.error("Search failed:", err);
         }
+      }, 250);
+    });
+  }
+
+  // Initial Boot
+  refreshIndex().then(() => {
+    if (allPages.length > 0) {
+      // Find welcome page or default to first page
+      const welcome = allPages.find((p) => p.slug === "welcome");
+      if (welcome) {
+        openPage(welcome.id);
+      } else {
+        openPage(allPages[0].id);
       }
-    });
-
-    els.fieldContent.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
-
-    els.fieldContent.addEventListener("drop", (e) => {
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-        const file = e.dataTransfer.files[0];
-        if (file.type.startsWith("image/")) {
-          e.preventDefault();
-          handleImageUpload(file);
-        }
-      }
-    });
-  }
-
-  // -------------------------------------------------------------
-  // Theme Toggle (Light / Dark)
-  // -------------------------------------------------------------
-  const savedTheme = localStorage.getItem("wiki-theme") ||
-    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-
-  function setTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("wiki-theme", theme);
-    const themeIcon = document.getElementById("theme-toggle-icon");
-    if (themeIcon) {
-      themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
-    }
-  }
-
-  setTheme(savedTheme);
-
-  const themeBtn = document.getElementById("theme-toggle-btn");
-  if (themeBtn) {
-    themeBtn.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-      setTheme(current);
-    });
-  }
-
-  // -------------------------------------------------------------
-  // Boot
-  // -------------------------------------------------------------
-  async function refreshPages() {
-    state.pages = await fetchPages();
-    renderSidebar();
-  }
-
-  async function boot() {
-    await refreshPages();
-    if (state.pages.length > 0) {
-      const welcome = state.pages.find((p) => p.slug === "welcome") || state.pages[0];
-      await openPage(welcome.id);
     } else {
       showView("empty");
     }
-  }
-
-  boot();
-})();
+  });
+});

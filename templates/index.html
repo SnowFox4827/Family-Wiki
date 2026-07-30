@@ -9,121 +9,19 @@
 <body>
 
 <div class="app">
-
-  <!-- Top bar -->
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">&#10038;</span>
-      <span class="brand-text">The Family Wiki</span>
-    </div>
-    <div class="search-wrap">
-      <input id="search-input" type="text" placeholder="Search the ledger&hellip;" autocomplete="off">
-      <div id="search-results" class="search-results hidden"></div>
-    </div>
-    <div class="header-actions">
-      <button id="theme-toggle-btn" class="btn btn-ghost theme-toggle" title="Toggle Light/Dark Mode" aria-label="Toggle Light/Dark Mode">
-        <span id="theme-toggle-icon">🌙</span>
-      </button>
-      <button id="new-page-btn" class="btn btn-accent">+ New Page</button>
-    </div>
-  </header>
+  {% include 'components/topbar.html' %}
 
   <div class="body">
+    {% include 'components/sidebar.html' %}
 
-    <!-- Sidebar -->
-    <nav class="sidebar">
-      <div class="sidebar-section-label">Shelves</div>
-      <ul id="category-tree" class="category-tree"></ul>
-
-      <div class="sidebar-section-label sidebar-section-label-spaced">Recently Updated</div>
-      <ul id="recent-list" class="recent-list"></ul>
-    </nav>
-
-    <!-- Main content -->
     <main class="main">
-
-      <!-- Reading view -->
-      <section id="view-page" class="view hidden">
-        <article class="ledger-page">
-          <div id="page-tab" class="ledger-tab"></div>
-          <div class="ledger-body">
-            <div class="page-meta-row">
-              <span id="page-category" class="chip chip-category"></span>
-              <span id="page-tags"></span>
-            </div>
-            <h1 id="page-title" class="ledger-title"></h1>
-            <div class="page-meta-line">
-              <span id="page-author"></span>
-              <span id="page-updated"></span>
-            </div>
-            <div id="page-content" class="ledger-content"></div>
-          </div>
-          <div class="ledger-actions">
-            <button id="edit-page-btn" class="btn btn-ghost">Edit Page</button>
-            <button id="delete-page-btn" class="btn btn-ghost btn-danger">Delete</button>
-          </div>
-        </article>
-      </section>
-
-      <!-- Empty state -->
-      <section id="view-empty" class="view">
-        <div class="empty-state">
-          <div class="empty-mark">&#10038;</div>
-          <h2>No page open yet</h2>
-          <p>Pick a page from the shelves on the left, search above, or start a new entry in the family record.</p>
-          <button class="btn btn-accent" id="empty-new-page-btn">+ New Page</button>
-        </div>
-      </section>
-
-      <!-- Editor view -->
-      <section id="view-editor" class="view hidden">
-        <form id="editor-form" class="editor">
-          <div class="editor-row">
-            <label for="field-title">Title</label>
-            <input id="field-title" type="text" placeholder="e.g. Grandma's Kitchen" required>
-          </div>
-          <div class="editor-row editor-row-split">
-            <div>
-              <label for="field-category">Category</label>
-              <input id="field-category" list="category-options" type="text" placeholder="e.g. Recipes">
-              <datalist id="category-options"></datalist>
-            </div>
-            <div>
-              <label for="field-tags">Tags <span class="hint">(comma separated)</span></label>
-              <input id="field-tags" type="text" placeholder="e.g. holidays, dessert">
-            </div>
-            <div>
-              <label for="field-author">Written by</label>
-              <input id="field-author" type="text" placeholder="Your name">
-            </div>
-          </div>
-          <div class="editor-row">
-            <div class="editor-label-row">
-              <label for="field-content">
-                Content
-                <span class="hint">Markdown: # heading, **bold**, *italic*, - list, [[Link]], ![alt](image)</span>
-              </label>
-              <div class="upload-tools">
-                <input type="file" id="image-upload-input" accept="image/*" class="hidden">
-                <button type="button" id="upload-image-btn" class="btn btn-ghost btn-sm">
-                  📷 Upload Image
-                </button>
-              </div>
-            </div>
-            <textarea id="field-content" rows="16" placeholder="Once upon a time..."></textarea>
-            <div id="upload-status" class="upload-status hidden"></div>
-          </div>
-          <div class="editor-actions">
-            <button type="submit" class="btn btn-accent">Save Page</button>
-            <button type="button" id="cancel-edit-btn" class="btn btn-ghost">Cancel</button>
-          </div>
-        </form>
-      </section>
-
+      {% include 'components/view_page.html' %}
+      {% include 'components/view_empty.html' %}
+      {% include 'components/view_editor.html' %}
     </main>
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
