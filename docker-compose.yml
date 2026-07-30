@@ -1,0 +1,15 @@
+services:
+  weather-app:
+    build: .
+    container_name: weather-app
+
+    ports:
+      - "5005:5005"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./config.json:/app/config.json
+
+    restart: unless-stopped
