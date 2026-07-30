@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import re
 from datetime import datetime, timezone
@@ -6,7 +7,7 @@ from pathlib import Path
 from flask import Flask, g, jsonify, request, render_template
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "wiki.db"
+DB_PATH = Path(os.environ.get("WIKI_DB_PATH", BASE_DIR / "wiki.db"))
 
 app = Flask(__name__)
 
@@ -279,6 +280,8 @@ def search():
     return jsonify([page_to_dict(r, include_content=False) for r in rows])
 
 
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+init_db()
+
 if __name__ == "__main__":
-    init_db()
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, host="0.0.0.0")

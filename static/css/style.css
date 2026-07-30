@@ -10,9 +10,9 @@
   --cream: #FBF7EC;
   --line: rgba(42, 36, 32, 0.14);
 
-  --font-display: "Fraunces", serif;
-  --font-body: "Source Serif 4", serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
+  --font-body: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }

@@ -1,15 +1,11 @@
 services:
-  weather-app:
+  wiki:
     build: .
-    container_name: weather-app
-
     ports:
       - "5005:5005"
-
-    env_file:
-      - .env
-
     volumes:
-      - ./config.json:/app/config.json
-
+      - wiki-data:/app/data
     restart: unless-stopped
+
+volumes:
+  wiki-data:
