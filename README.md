@@ -95,13 +95,16 @@ happy to help with that if you get there.
 family_wiki/
 ├── app.py                 Flask app + REST API + SQLite setup
 ├── requirements.txt
+├── Dockerfile             Docker configuration
+├── docker-compose.yml     Docker Compose setup (port 5005)
 ├── data/
-│   └── wiki.db          created on first run
+│   ├── wiki.db            SQLite database (created on first run)
+│   └── uploads/           Uploaded photos and images
 ├── templates/
-│   └── index.html          single-page app shell
+│   └── index.html         Single-page app template
 └── static/
-    ├── css/style.css        "family ledger" visual theme
-    └── js/app.js            all frontend logic (fetch calls, rendering)
+    ├── css/style.css       Theme styles (Light & Dark modes)
+    └── js/app.js           Frontend app logic & image upload handlers
 ```
 
 ## API reference
@@ -122,6 +125,5 @@ family_wiki/
 ## Ideas for extending it
 
 - Add a simple shared password gate before editing
-- Add photo uploads and embed them in pages
 - Show a diff view using the `revisions` table that's already there
 - Add a "family tree" page type with a visual chart
