@@ -149,6 +149,18 @@ def page_to_dict(row, include_content=True):
     return d
 
 
+def normalize_tags(raw_tags):
+    if not raw_tags:
+        return ""
+    if isinstance(raw_tags, str):
+        items = raw_tags.split(",")
+    elif isinstance(raw_tags, (list, tuple)):
+        items = raw_tags
+    else:
+        return ""
+    return ",".join(t.strip() for t in items if isinstance(t, str) and t.strip())
+
+
 # ---------------------------------------------------------------------------
 # Page routes (HTML shell)
 # ---------------------------------------------------------------------------
@@ -192,7 +204,7 @@ def create_page():
 
     slug = unique_slug(db, title)
     category = (data.get("category") or "Uncategorized").strip() or "Uncategorized"
-    tags = ",".join(t.strip() for t in (data.get("tags") or []) if t.strip())
+    tags = normalize_tags(data.get("tags"))
     content = data.get("content") or ""
     author = (data.get("author") or "").strip()
     now = datetime.now(timezone.utc).isoformat()
@@ -238,8 +250,8 @@ def update_page(page_id):
     if not category:
         category = "Uncategorized"
         
-    if "tags" in data and isinstance(data["tags"], list):
-        tags = ",".join(t.strip() for t in data["tags"] if t.strip())
+    if "tags" in data and data["tags"] is not None:
+        tags = normalize_tags(data["tags"])
     else:
         tags = row["tags"]
 

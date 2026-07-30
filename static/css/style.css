@@ -554,13 +554,14 @@ button, input, textarea {
 
 .editor-row-split {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 .editor-row-split > div {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .editor label {
@@ -614,6 +615,8 @@ button, input, textarea {
 }
 
 .editor input[type="text"], .editor textarea {
+  box-sizing: border-box;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 3px;
   padding: 10px 12px;
