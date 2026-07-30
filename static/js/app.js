@@ -188,6 +188,9 @@
     return html;
 
     function inlineFormat(text) {
+      text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (m, alt, url) => {
+        return `<img src="${escapeAttr(url.trim())}" alt="${escapeAttr(alt.trim())}" class="page-image" />`;
+      });
       text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
       text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
       text = text.replace(/\[\[(.+?)\]\]/g, (m, name) => {
@@ -361,6 +364,97 @@
       });
     }
     els.searchResults.classList.remove("hidden");
+  }
+
+  // -------------------------------------------------------------
+  // Image Upload Logic
+  // -------------------------------------------------------------
+  const uploadImageBtn = document.getElementById("upload-image-btn");
+  const imageUploadInput = document.getElementById("image-upload-input");
+  const uploadStatus = document.getElementById("upload-status");
+
+  function insertAtCursor(textarea, text) {
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const val = textarea.value;
+    textarea.value = val.substring(0, start) + text + val.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    textarea.focus();
+  }
+
+  async function handleImageUpload(file) {
+    if (!file) return;
+    if (uploadStatus) {
+      uploadStatus.textContent = "Uploading image...";
+      uploadStatus.classList.remove("hidden");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      const markdown = `\n![${data.original_name || "Image"}](${data.url})\n`;
+      insertAtCursor(els.fieldContent, markdown);
+      if (uploadStatus) {
+        uploadStatus.textContent = "Image uploaded successfully!";
+        setTimeout(() => uploadStatus.classList.add("hidden"), 3000);
+      }
+    } catch (err) {
+      if (uploadStatus) {
+        uploadStatus.textContent = `Upload error: ${err.message}`;
+      } else {
+        alert(`Upload error: ${err.message}`);
+      }
+    } finally {
+      if (imageUploadInput) imageUploadInput.value = "";
+    }
+  }
+
+  if (uploadImageBtn && imageUploadInput) {
+    uploadImageBtn.addEventListener("click", () => imageUploadInput.click());
+    imageUploadInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageUpload(e.target.files[0]);
+      }
+    });
+  }
+
+  if (els.fieldContent) {
+    els.fieldContent.addEventListener("paste", (e) => {
+      const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.indexOf("image") === 0) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleImageUpload(file);
+            break;
+          }
+        }
+      }
+    });
+
+    els.fieldContent.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+
+    els.fieldContent.addEventListener("drop", (e) => {
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith("image/")) {
+          e.preventDefault();
+          handleImageUpload(file);
+        }
+      }
+    });
   }
 
   // -------------------------------------------------------------

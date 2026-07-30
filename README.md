@@ -8,6 +8,7 @@ Flask + SQLite on the backend and plain HTML/CSS/JS on the frontend
 ## Features
 
 - Light and Dark mode toggle (persists across sessions)
+- Photo and image uploads (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`) with drag-and-drop & paste support in the editor
 - Create, edit, and delete pages
 - Organize pages into categories (shown as "shelves" in the sidebar)
 - Tag pages and search across titles, content, tags, and categories
@@ -115,6 +116,8 @@ family_wiki/
 | GET    | `/api/pages/<id>/history`     | List revisions for a page      |
 | GET    | `/api/categories`             | List categories with counts    |
 | GET    | `/api/search?q=...`           | Search pages                   |
+| POST   | `/api/upload`                | Upload an image file           |
+| GET    | `/uploads/<filename>`        | Serve an uploaded image file   |
 
 ## Ideas for extending it
 

@@ -98,11 +98,20 @@
             </div>
           </div>
           <div class="editor-row">
-            <label for="field-content">
-              Content
-              <span class="hint">Markdown-ish: # heading, **bold**, *italic*, - list, [[Link to Page]]</span>
-            </label>
+            <div class="editor-label-row">
+              <label for="field-content">
+                Content
+                <span class="hint">Markdown: # heading, **bold**, *italic*, - list, [[Link]], ![alt](image)</span>
+              </label>
+              <div class="upload-tools">
+                <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                <button type="button" id="upload-image-btn" class="btn btn-ghost btn-sm">
+                  📷 Upload Image
+                </button>
+              </div>
+            </div>
             <textarea id="field-content" rows="16" placeholder="Once upon a time..."></textarea>
+            <div id="upload-status" class="upload-status hidden"></div>
           </div>
           <div class="editor-actions">
             <button type="submit" class="btn btn-accent">Save Page</button>

@@ -4,10 +4,13 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, g, jsonify, request, render_template
+from flask import Flask, g, jsonify, request, render_template, send_from_directory
+import uuid
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("WIKI_DB_PATH", BASE_DIR / "data" / "wiki.db"))
+UPLOAD_DIR = DB_PATH.parent / "uploads"
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
 app = Flask(__name__)
 
@@ -33,6 +36,7 @@ def close_db(exception=None):
 
 def init_db():
     db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
     db.executescript(
         """
         CREATE TABLE IF NOT EXISTS pages (
@@ -59,10 +63,10 @@ def init_db():
     )
     db.commit()
 
-    # Seed with a starter page on first run so the wiki isn't empty.
+    # Seed or update starter Welcome page
     cur = db.execute("SELECT COUNT(*) FROM pages")
+    now = datetime.now(timezone.utc).isoformat()
     if cur.fetchone()[0] == 0:
-        now = datetime.now(timezone.utc).isoformat()
         db.execute(
             """INSERT INTO pages (title, slug, category, tags, content, author, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -77,14 +81,29 @@ def init_db():
                 "- Organize pages into categories using the sidebar\n"
                 "- Link to another page by writing its title in double brackets, "
                 "like [[Grandma's Kitchen]]\n"
+                "- Upload photos to pages using the **📷 Upload Image** button, drag & drop, or pasting (`Ctrl+V` / `Cmd+V`)\n"
+                "- Toggle light or dark mode anytime with the 🌙/☀️ button in the top bar\n"
                 "- Search everything from the top bar\n\n"
-                "Start by clicking **New Page**.",
+                "Start by clicking **+ New Page**.",
                 "The Wiki",
                 now,
                 now,
             ),
         )
         db.commit()
+    else:
+        # Update existing welcome page if present so photo upload instructions appear
+        cur = db.execute("SELECT id, content FROM pages WHERE slug = 'welcome'")
+        row = cur.fetchone()
+        if row and "Upload photos" not in row["content"]:
+            new_content = row["content"].replace(
+                "- Search everything from the top bar",
+                "- Upload photos to pages using the **📷 Upload Image** button, drag & drop, or pasting (`Ctrl+V` / `Cmd+V`)\n"
+                "- Toggle light or dark mode anytime with the 🌙/☀️ button in the top bar\n"
+                "- Search everything from the top bar"
+            )
+            db.execute("UPDATE pages SET content = ? WHERE id = ?", (new_content, row["id"]))
+            db.commit()
     db.close()
 
 
@@ -292,7 +311,41 @@ def search():
     return jsonify([page_to_dict(r, include_content=False) for r in rows])
 
 
+# ---------------------------------------------------------------------------
+# API: upload & files
+# ---------------------------------------------------------------------------
+
+@app.route("/api/upload", methods=["POST"])
+def upload_file():
+    if "file" not in request.files and "image" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    file = request.files.get("file") or request.files.get("image")
+    if not file or not file.filename:
+        return jsonify({"error": "No selected file"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({"error": f"Invalid file type. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"}), 400
+
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = UPLOAD_DIR / filename
+    file.save(filepath)
+
+    return jsonify({
+        "url": f"/uploads/{filename}",
+        "filename": filename,
+        "original_name": file.filename
+    }), 201
+
+
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename):
+    return send_from_directory(UPLOAD_DIR, filename)
+
+
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 init_db()
 
 if __name__ == "__main__":

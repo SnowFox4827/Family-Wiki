@@ -571,6 +571,40 @@ button, input, textarea {
   color: var(--ink-green);
 }
 
+.editor-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.upload-tools {
+  display: flex;
+  align-items: center;
+}
+
+.upload-status {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--gold);
+  margin-top: 6px;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+}
+
+.page-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 16px 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  display: block;
+}
+
 .editor .hint {
   text-transform: none;
   letter-spacing: 0;
