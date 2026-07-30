@@ -68,26 +68,27 @@ Once started, access the app in your browser at **http://127.0.0.1:5005** (on yo
 
 ## Sharing it with your family
 
-By default Flask only listens on your own machine. To let other people
-on your home network reach it, run:
+### Option A: Using Docker Compose (Recommended)
+When running with Docker Compose (`docker compose up -d`), port `5005` is automatically exposed to your network. Family members on the same Wi-Fi network can visit:
 
-```bash
-python app.py
+```text
+http://<your-local-ip>:5005
 ```
 
-and edit the last line of `app.py` to:
+### Option B: Running directly with Python
+By default, running `python app.py` listens locally on `http://127.0.0.1:5000`. To allow other devices on your home network to connect, make sure `app.py` binds to `0.0.0.0`:
 
 ```python
 app.run(debug=True, port=5000, host="0.0.0.0")
 ```
 
-Then family members on the same WiFi network can visit
-`http://<your-computer's-local-IP>:5000`. There's no login system —
-anyone who can reach the page can edit it, which is fine for a private
-home network but not for the open internet. If you want to put it
-online permanently, you'd want to add authentication and deploy it
-behind a proper web server (e.g. with `gunicorn` + a reverse proxy) —
-happy to help with that if you get there.
+Then family members can visit:
+
+```text
+http://<your-local-ip>:5000
+```
+
+> **Note:** There is no authentication system — anyone who can reach the IP on your home Wi-Fi network can view and edit pages.
 
 ## Project structure
 
