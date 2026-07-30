@@ -15,6 +15,7 @@
     recentList: document.getElementById("recent-list"),
     searchInput: document.getElementById("search-input"),
     searchResults: document.getElementById("search-results"),
+    searchWrap: document.querySelector(".search-wrap"),
 
     viewPage: document.getElementById("view-page"),
     viewEmpty: document.getElementById("view-empty"),
@@ -164,24 +165,24 @@
 
   function renderContent(raw) {
     const titleToId = new Map(state.pages.map((p) => [p.title.toLowerCase(), p.id]));
-    const lines = escapeHtml(raw || "").split("\n");
+    const lines = (raw || "").split("\n");
     let html = "";
     let inList = false;
 
     const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
 
     for (let line of lines) {
-      if (/^###\s+/.test(line)) { closeList(); html += `<h3>${line.replace(/^###\s+/, "")}</h3>`; continue; }
-      if (/^##\s+/.test(line)) { closeList(); html += `<h2>${line.replace(/^##\s+/, "")}</h2>`; continue; }
-      if (/^#\s+/.test(line)) { closeList(); html += `<h1>${line.replace(/^#\s+/, "")}</h1>`; continue; }
+      if (/^###\s+/.test(line)) { closeList(); html += `<h3>${inlineFormat(escapeHtml(line.replace(/^###\s+/, "")))}</h3>`; continue; }
+      if (/^##\s+/.test(line)) { closeList(); html += `<h2>${inlineFormat(escapeHtml(line.replace(/^##\s+/, "")))}</h2>`; continue; }
+      if (/^#\s+/.test(line)) { closeList(); html += `<h1>${inlineFormat(escapeHtml(line.replace(/^#\s+/, "")))}</h1>`; continue; }
       if (/^-\s+/.test(line)) {
         if (!inList) { html += "<ul>"; inList = true; }
-        html += `<li>${inlineFormat(line.replace(/^-\s+/, ""))}</li>`;
+        html += `<li>${inlineFormat(escapeHtml(line.replace(/^-\s+/, "")))}</li>`;
         continue;
       }
       closeList();
       if (line.trim() === "") { continue; }
-      html += `<p>${inlineFormat(line)}</p>`;
+      html += `<p>${inlineFormat(escapeHtml(line))}</p>`;
     }
     closeList();
     return html;
@@ -190,9 +191,10 @@
       text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
       text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
       text = text.replace(/\[\[(.+?)\]\]/g, (m, name) => {
-        const id = titleToId.get(name.trim().toLowerCase());
-        if (id) return `<a href="#" class="wiki-link" data-id="${id}">${escapeHtml(name)}</a>`;
-        return `<a href="#" class="wiki-link missing" data-new-title="${escapeAttr(name)}">${escapeHtml(name)}</a>`;
+        const unescapedName = name.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+        const id = titleToId.get(unescapedName.trim().toLowerCase());
+        if (id) return `<a href="#" class="wiki-link" data-id="${id}">${name}</a>`;
+        return `<a href="#" class="wiki-link missing" data-new-title="${escapeAttr(unescapedName)}">${name}</a>`;
       });
       return text;
     }
@@ -335,7 +337,7 @@
   });
 
   document.addEventListener("click", (e) => {
-    if (!els.searchWrap && !e.target.closest(".search-wrap")) {
+    if (!e.target.closest(".search-wrap")) {
       els.searchResults.classList.add("hidden");
     }
   });
@@ -359,6 +361,31 @@
       });
     }
     els.searchResults.classList.remove("hidden");
+  }
+
+  // -------------------------------------------------------------
+  // Theme Toggle (Light / Dark)
+  // -------------------------------------------------------------
+  const savedTheme = localStorage.getItem("wiki-theme") ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+  function setTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("wiki-theme", theme);
+    const themeIcon = document.getElementById("theme-toggle-icon");
+    if (themeIcon) {
+      themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+    }
+  }
+
+  setTheme(savedTheme);
+
+  const themeBtn = document.getElementById("theme-toggle-btn");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      setTheme(current);
+    });
   }
 
   // -------------------------------------------------------------

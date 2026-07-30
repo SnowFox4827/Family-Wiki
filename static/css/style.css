@@ -1,4 +1,6 @@
-:root {
+:root, [data-theme="light"] {
+  --topbar-bg: #1F3B2C;
+  --sidebar-bg: #16291F;
   --ink-green: #1F3B2C;
   --ink-green-dark: #16291F;
   --parchment: #F1E8D5;
@@ -9,10 +11,31 @@
   --charcoal: #2A2420;
   --cream: #FBF7EC;
   --line: rgba(42, 36, 32, 0.14);
+  --input-bg: #ffffff;
+  --text-muted: rgba(42, 36, 32, 0.6);
+  --dot-color: rgba(42, 36, 32, 0.035);
 
   --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
   --font-body: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+[data-theme="dark"] {
+  --topbar-bg: #121915;
+  --sidebar-bg: #17211b;
+  --ink-green: #7dd398;
+  --ink-green-dark: #22422d;
+  --parchment: #121514;
+  --parchment-shadow: #080a09;
+  --gold: #e5b367;
+  --gold-light: #f5cf89;
+  --rust: #ff9e7d;
+  --charcoal: #e2e8f0;
+  --cream: #1e2420;
+  --line: rgba(226, 232, 240, 0.16);
+  --input-bg: #151a17;
+  --text-muted: rgba(226, 232, 240, 0.7);
+  --dot-color: rgba(255, 255, 255, 0.04);
 }
 
 * { box-sizing: border-box; }
@@ -26,7 +49,7 @@ html, body {
 body {
   background: var(--parchment);
   background-image:
-    radial-gradient(rgba(42,36,32,0.035) 1px, transparent 1px);
+    radial-gradient(var(--dot-color) 1px, transparent 1px);
   background-size: 3px 3px;
   color: var(--charcoal);
   font-family: var(--font-body);
@@ -60,9 +83,31 @@ button, input, textarea {
   align-items: center;
   gap: 20px;
   padding: 14px 24px;
-  background: var(--ink-green);
-  color: var(--cream);
+  background: var(--topbar-bg);
+  color: #FBF7EC;
   border-bottom: 3px solid var(--gold);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  color: #FBF7EC;
+  font-size: 1.1rem;
+  border-color: rgba(251, 247, 236, 0.25);
+  border-radius: 4px;
+}
+.theme-toggle:hover {
+  background: rgba(251, 247, 236, 0.15);
+  border-color: rgba(251, 247, 236, 0.4);
 }
 
 .brand {
@@ -83,6 +128,7 @@ button, input, textarea {
   font-size: 1.25rem;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  color: #FBF7EC;
 }
 
 .search-wrap {
@@ -97,7 +143,7 @@ button, input, textarea {
   border-radius: 3px;
   border: 1px solid transparent;
   background: rgba(251, 247, 236, 0.12);
-  color: var(--cream);
+  color: #FBF7EC;
   font-size: 0.95rem;
 }
 
@@ -154,7 +200,7 @@ button, input, textarea {
 
 .search-empty {
   padding: 12px 14px;
-  color: rgba(42,36,32,0.6);
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -170,8 +216,8 @@ button, input, textarea {
 
 .sidebar {
   flex: 0 0 260px;
-  background: var(--ink-green-dark);
-  color: var(--cream);
+  background: var(--sidebar-bg);
+  color: #FBF7EC;
   padding: 20px 16px 24px;
   overflow-y: auto;
   border-right: 1px solid rgba(0,0,0,0.2);
@@ -239,30 +285,33 @@ button, input, textarea {
 .page-branch-item a {
   display: block;
   padding: 5px 8px;
-  color: rgba(251, 247, 236, 0.82);
+  color: rgba(251, 247, 236, 0.88);
   text-decoration: none;
   font-size: 0.87rem;
   border-radius: 3px;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .page-branch-item a:hover {
-  background: rgba(251, 247, 236, 0.08);
-  color: var(--cream);
+  background: rgba(251, 247, 236, 0.12);
+  color: #ffffff;
 }
 
 .page-branch-item a.active {
   color: var(--gold-light);
+  font-weight: 600;
 }
 
 .recent-list li a {
   display: block;
   padding: 5px 8px;
-  color: rgba(251, 247, 236, 0.75);
+  color: rgba(251, 247, 236, 0.85);
   text-decoration: none;
   font-size: 0.85rem;
   border-radius: 3px;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.recent-list li a:hover { background: rgba(251,247,236,0.08); color: var(--cream); }
+.recent-list li a:hover { background: rgba(251,247,236,0.12); color: #ffffff; }
 
 /* ---------------------------------------------------------------- */
 /* Main / ledger page */
@@ -331,8 +380,8 @@ button, input, textarea {
 }
 
 .chip-category {
-  background: var(--ink-green);
-  color: var(--cream);
+  background: var(--ink-green-dark);
+  color: #ffffff;
 }
 
 .chip-tag {
@@ -353,7 +402,7 @@ button, input, textarea {
 .page-meta-line {
   font-family: var(--font-mono);
   font-size: 0.76rem;
-  color: rgba(42,36,32,0.55);
+  color: var(--text-muted);
   display: flex;
   gap: 14px;
   margin-bottom: 26px;
@@ -375,15 +424,41 @@ button, input, textarea {
 
 .ledger-content p { margin: 0 0 1em; }
 .ledger-content ul, .ledger-content ol { margin: 0 0 1em; padding-left: 1.4em; }
+.ledger-content a {
+  color: var(--rust);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.ledger-content a:hover {
+  color: var(--gold-light);
+}
+
 .ledger-content a.wiki-link {
   color: var(--rust);
+  font-weight: 600;
   text-decoration: none;
-  border-bottom: 1px solid rgba(140, 74, 52, 0.4);
+  border-bottom: 2px solid var(--rust);
 }
-.ledger-content a.wiki-link:hover { border-bottom-color: var(--rust); }
+
+.ledger-content a.wiki-link:hover {
+  color: var(--gold-light);
+  border-bottom-color: var(--gold-light);
+}
+
 .ledger-content a.wiki-link.missing {
-  color: rgba(140,74,52,0.55);
-  border-bottom-style: dashed;
+  color: var(--rust);
+  opacity: 0.8;
+  border-bottom: 2px dashed var(--rust);
+}
+
+.ledger-content a.wiki-link.missing:hover {
+  color: var(--gold-light);
+  border-bottom-color: var(--gold-light);
+  opacity: 1;
 }
 .ledger-content strong { color: var(--ink-green); }
 
@@ -402,7 +477,7 @@ button, input, textarea {
 .empty-state {
   text-align: center;
   padding: 90px 20px;
-  color: rgba(42,36,32,0.7);
+  color: var(--text-muted);
 }
 
 .empty-mark {
@@ -453,7 +528,7 @@ button, input, textarea {
   border-color: var(--line);
   color: var(--charcoal);
 }
-.btn-ghost:hover { background: rgba(42,36,32,0.05); }
+.btn-ghost:hover { background: var(--line); }
 
 .btn-danger { color: var(--rust); }
 .btn-danger:hover { background: rgba(140,74,52,0.08); border-color: rgba(140,74,52,0.3); }
@@ -499,7 +574,7 @@ button, input, textarea {
 .editor .hint {
   text-transform: none;
   letter-spacing: 0;
-  color: rgba(42,36,32,0.5);
+  color: var(--text-muted);
   font-size: 0.72rem;
   margin-left: 4px;
 }
@@ -508,7 +583,7 @@ button, input, textarea {
   border: 1px solid var(--line);
   border-radius: 3px;
   padding: 10px 12px;
-  background: #fff;
+  background: var(--input-bg);
   font-size: 0.98rem;
   color: var(--charcoal);
 }

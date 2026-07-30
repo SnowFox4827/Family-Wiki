@@ -7,6 +7,7 @@ Flask + SQLite on the backend and plain HTML/CSS/JS on the frontend
 
 ## Features
 
+- Light and Dark mode toggle (persists across sessions)
 - Create, edit, and delete pages
 - Organize pages into categories (shown as "shelves" in the sidebar)
 - Tag pages and search across titles, content, tags, and categories
@@ -36,10 +37,33 @@ Flask + SQLite on the backend and plain HTML/CSS/JS on the frontend
    python app.py
    ```
 
-   This creates `wiki.db` (a SQLite file) next to `app.py` the first
+   This creates `data/wiki.db` (a SQLite file inside `data/`) the first
    time you run it, seeded with a "Welcome" page.
 
-3. Open **http://127.0.0.1:5000** in your browser.
+3. Open **http://127.0.0.1:5000** or **http://<your-local-ip>:5000** in your browser.
+
+## Docker Setup
+
+To run the application with Docker Compose:
+
+```bash
+# Build and start in detached (background) mode
+docker compose up -d --build
+```
+
+To stop the running container:
+
+```bash
+docker compose down
+```
+
+To view logs while running in background mode:
+
+```bash
+docker compose logs -f
+```
+
+Once started, access the app in your browser at **http://127.0.0.1:5005** (on your local machine) or **http://<your-local-ip>:5005** (from other devices on your network).
 
 ## Sharing it with your family
 
@@ -70,7 +94,8 @@ happy to help with that if you get there.
 family_wiki/
 ├── app.py                 Flask app + REST API + SQLite setup
 ├── requirements.txt
-├── wiki.db                 created on first run
+├── data/
+│   └── wiki.db          created on first run
 ├── templates/
 │   └── index.html          single-page app shell
 └── static/

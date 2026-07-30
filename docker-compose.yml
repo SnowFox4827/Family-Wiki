@@ -2,7 +2,9 @@ services:
   wiki:
     build: .
     ports:
-      - "5005:5005"
+      - "5005:5000"
+    environment:
+      - WIKI_DB_PATH=/app/data/wiki.db
     volumes:
       - wiki-data:/app/data
     restart: unless-stopped

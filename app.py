@@ -7,7 +7,7 @@ from pathlib import Path
 from flask import Flask, g, jsonify, request, render_template
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = Path(os.environ.get("WIKI_DB_PATH", BASE_DIR / "wiki.db"))
+DB_PATH = Path(os.environ.get("WIKI_DB_PATH", BASE_DIR / "data" / "wiki.db"))
 
 app = Flask(__name__)
 
@@ -200,7 +200,13 @@ def update_page(page_id):
         return jsonify({"error": "Page not found"}), 404
 
     data = request.get_json(force=True) or {}
-    title = (data.get("title") or row["title"]).strip()
+    
+    if "title" in data:
+        title = (data.get("title") or "").strip()
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+    else:
+        title = row["title"]
 
     dupe = db.execute(
         "SELECT id FROM pages WHERE title = ? AND id != ?", (title, page_id)
@@ -209,11 +215,17 @@ def update_page(page_id):
         return jsonify({"error": "A page with that title already exists"}), 409
 
     slug = row["slug"] if title == row["title"] else unique_slug(db, title, exclude_id=page_id)
-    category = (data.get("category") or row["category"]).strip() or "Uncategorized"
-    tags_val = data.get("tags")
-    tags = ",".join(t.strip() for t in tags_val if t.strip()) if tags_val is not None else row["tags"]
-    content = data.get("content") if data.get("content") is not None else row["content"]
-    author = (data.get("author") or row["author"] or "").strip()
+    category = data["category"].strip() if "category" in data and data["category"] is not None else row["category"]
+    if not category:
+        category = "Uncategorized"
+        
+    if "tags" in data and isinstance(data["tags"], list):
+        tags = ",".join(t.strip() for t in data["tags"] if t.strip())
+    else:
+        tags = row["tags"]
+
+    content = data["content"] if "content" in data and data["content"] is not None else row["content"]
+    author = data["author"].strip() if "author" in data and data["author"] is not None else row["author"]
     now = datetime.now(timezone.utc).isoformat()
 
     db.execute(
@@ -284,4 +296,5 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 init_db()
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000, host="0.0.0.0")
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, port=port, host="0.0.0.0")
