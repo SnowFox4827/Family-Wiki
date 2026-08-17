@@ -14,6 +14,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentPage = null;
   let allPages = [];
   const titleToId = new Map();
+  // Per-category collapse state, persisted locally
+  let collapsedCats = {};
+  try {
+    collapsedCats = JSON.parse(localStorage.getItem("collapsed-categories") || "{}");
+  } catch (e) { collapsedCats = {}; }
 
   // 3. DOM Elements
   const els = {
@@ -118,9 +123,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let html = "";
     Object.keys(tree).sort().forEach((cat) => {
       const count = tree[cat].length;
+      const isCollapsed = !!collapsedCats[cat];
       html += `<li class="category-node">`;
-      html += `<div class="category-header"><span class="category-name">📁 ${escapeHtml(cat)}</span><span class="category-count">${count}</span></div>`;
-      html += `<ul class="page-branch-list">`;
+      html += `<div class="category-header${isCollapsed ? " collapsed" : ""}"><span class="category-toggle">▸</span><span class="category-name">📁 ${escapeHtml(cat)}</span><span class="category-count">${count}</span></div>`;
+      html += `<ul class="page-branch-list${isCollapsed ? " collapsed" : ""}">`;
       tree[cat].forEach((p) => {
         const active = currentPage && currentPage.id === p.id ? "active" : "";
         html += `<li class="page-branch-item"><a href="#" class="page-link ${active}" data-id="${p.id}">${escapeHtml(p.title)}</a></li>`;
@@ -129,9 +135,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (unassigned.length > 0) {
+      const isCollapsed = !!collapsedCats["Uncategorized"];
       html += `<li class="category-node">`;
-      html += `<div class="category-header"><span class="category-name">Uncategorized</span><span class="category-count">${unassigned.length}</span></div>`;
-      html += `<ul class="page-branch-list">`;
+      html += `<div class="category-header${isCollapsed ? " collapsed" : ""}"><span class="category-toggle">▸</span><span class="category-name">Uncategorized</span><span class="category-count">${unassigned.length}</span></div>`;
+      html += `<ul class="page-branch-list${isCollapsed ? " collapsed" : ""}">`;
       unassigned.forEach((p) => {
         const active = currentPage && currentPage.id === p.id ? "active" : "";
         html += `<li class="page-branch-item"><a href="#" class="page-link ${active}" data-id="${p.id}">${escapeHtml(p.title)}</a></li>`;
@@ -275,6 +282,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Links & Navigation handling
   document.addEventListener("click", (e) => {
+    // Collapse / expand a category shelf
+    const catHeader = e.target.closest(".category-header");
+    if (catHeader) {
+      e.preventDefault();
+      const node = catHeader.closest(".category-node");
+      const list = node && node.querySelector(".page-branch-list");
+      if (list) {
+        const isCollapsed = list.classList.toggle("collapsed");
+        catHeader.classList.toggle("collapsed", isCollapsed);
+        const name = catHeader.querySelector(".category-name");
+        const key = name ? name.textContent.replace("📁 ", "").trim() : "Uncategorized";
+        collapsedCats[key] = isCollapsed;
+        localStorage.setItem("collapsed-categories", JSON.stringify(collapsedCats));
+      }
+      return;
+    }
+
     // Sidebar & Recent links
     const pageLink = e.target.closest(".page-link");
     if (pageLink) {

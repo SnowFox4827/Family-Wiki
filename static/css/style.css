@@ -339,6 +339,27 @@ button, input, textarea {
   font-size: 0.95rem;
 }
 
+.category-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  font-size: 0.7rem;
+  color: rgba(251, 247, 236, 0.65);
+  transition: transform 0.18s ease;
+  flex: none;
+}
+
+.category-header.collapsed .category-toggle {
+  transform: rotate(90deg);
+}
+
+.category-header .category-name { flex: 1 1 auto; }
+
+.category-header.collapsed {
+  border-left-color: transparent;
+}
+
 .category-count {
   font-family: var(--font-mono);
   font-size: 0.7rem;
@@ -350,6 +371,10 @@ button, input, textarea {
   margin: 2px 0 8px 6px;
   padding-left: 12px;
   border-left: 1px dashed rgba(251, 247, 236, 0.2);
+}
+
+.page-branch-list.collapsed {
+  display: none;
 }
 
 .page-branch-item a {
