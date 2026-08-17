@@ -15,8 +15,14 @@
   --text-muted: rgba(42, 36, 32, 0.6);
   --dot-color: rgba(42, 36, 32, 0.035);
 
-  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
-  --font-body: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
+  /* book-paper texture tints */
+  --laid-line: rgba(184, 134, 59, 0.07);
+  --paper-age: rgba(140, 74, 52, 0.06);
+  --leather-grain: rgba(255, 255, 255, 0.018);
+
+/* No external fonts — classic bookish serifs available on the user's device */
+  --font-display: "Bookman Old Style", "Book Antiqua", "Palatino Linotype", Georgia, "Iowan Old Style", serif;
+  --font-body: "Bookman Old Style", "Iowan Old Style", "Palatino Linotype", Georgia, "URW Palladio L", serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
 }
 
@@ -47,10 +53,23 @@ html, body {
 }
 
 body {
-  background: var(--parchment);
+  background-color: var(--parchment);
+  /* laid-paper texture: fine horizontal rulings over warm parchment */
   background-image:
-    radial-gradient(var(--dot-color) 1px, transparent 1px);
-  background-size: 3px 3px;
+    repeating-linear-gradient(
+      0deg,
+      var(--laid-line) 0px,
+      var(--laid-line) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      ellipse at 50% 120%,
+      transparent 0%,
+      var(--paper-age) 68%,
+      rgba(61, 41, 30, 0.14) 135%
+    );
+  background-attachment: fixed;
   color: var(--charcoal);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -83,7 +102,15 @@ button, input, textarea {
   align-items: center;
   gap: 20px;
   padding: 14px 24px;
-  background: var(--topbar-bg);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      var(--leather-grain) 0px,
+      var(--leather-grain) 2px,
+      transparent 2px,
+      transparent 4px
+    ),
+    var(--topbar-bg);
   color: #FBF7EC;
   border-bottom: 3px solid var(--gold);
 }
@@ -165,7 +192,7 @@ button, input, textarea {
 }
 
 .brand-text {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 600;
   font-size: 1.25rem;
   letter-spacing: 0.01em;
@@ -227,7 +254,7 @@ button, input, textarea {
 .search-result-item:hover { background: var(--parchment); }
 
 .search-result-title {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.98rem;
 }
@@ -276,7 +303,15 @@ button, input, textarea {
 
 .sidebar {
   flex: 0 0 260px;
-  background: var(--sidebar-bg);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      var(--leather-grain) 0px,
+      var(--leather-grain) 2px,
+      transparent 2px,
+      transparent 4px
+    ),
+    var(--sidebar-bg);
   color: #FBF7EC;
   padding: 20px 16px 24px;
   overflow-y: auto;
@@ -335,7 +370,7 @@ button, input, textarea {
 }
 
 .category-name {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 0.95rem;
 }
 
@@ -425,10 +460,27 @@ button, input, textarea {
   background: var(--cream);
   border-radius: 3px;
   box-shadow:
+    /* outer: page floating above the desk */
     0 1px 0 var(--parchment-shadow),
-    0 18px 40px rgba(22, 41, 31, 0.14);
+    0 18px 40px rgba(22, 41, 31, 0.14),
+    /* inner: aged paper — lighter core, warm mottled toward the edges */
+    inset 0 0 0 1px rgba(42, 36, 32, 0.05),
+    inset 0 0 60px rgba(140, 74, 52, 0.10),
+    inset 0 0 3px rgba(140, 74, 52, 0.10);
   border: 1px solid var(--line);
   padding-left: 26px;
+}
+
+.ledger-page::after {
+  /* faint foxing speckles on the open page */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(var(--paper-age) 1px, transparent 1.1px);
+  background-size: 9px 9px;
+  mix-blend-mode: multiply;
+  opacity: 0.55;
 }
 
 .ledger-page::before {
@@ -486,7 +538,7 @@ button, input, textarea {
 }
 
 .ledger-title {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: 2.4rem;
   line-height: 1.1;
@@ -511,13 +563,16 @@ button, input, textarea {
   color: var(--charcoal);
 }
 
+.ledger-content p {
+  margin: 0 0 1em;
+}
+
 .ledger-content h1, .ledger-content h2, .ledger-content h3 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   color: var(--ink-green);
   margin-top: 1.4em;
 }
 
-.ledger-content p { margin: 0 0 1em; }
 .ledger-content ul, .ledger-content ol { margin: 0 0 1em; padding-left: 1.4em; }
 .ledger-content a {
   color: var(--rust);
@@ -582,7 +637,7 @@ button, input, textarea {
 }
 
 .empty-state h2 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   color: var(--ink-green);
   margin: 0 0 10px;
 }
