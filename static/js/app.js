@@ -64,14 +64,46 @@ document.addEventListener("DOMContentLoaded", () => {
     statusEl: els.uploadStatus,
   });
 
-  // 4.1 Sidebar Collapse Toggle
+  // 4.1 Sidebar Toggle (desktop collapse / mobile drawer)
+  const isMobile = () => window.matchMedia("(max-width: 860px)").matches;
+  function syncSidebarOnResize() {
+    if (!isMobile() && els.sidebar) {
+      els.sidebar.classList.remove("is-open");
+    }
+  }
+  window.addEventListener("resize", syncSidebarOnResize);
+
   if (els.sidebarToggleBtn) {
-    els.sidebarToggleBtn.addEventListener("click", () => {
+    els.sidebarToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       if (!els.sidebar) return;
-      const collapsed = els.sidebar.classList.toggle("collapsed");
-      localStorage.setItem("sidebar-collapsed", collapsed ? "true" : "false");
+      if (isMobile()) {
+        els.sidebar.classList.toggle("is-open");
+      } else {
+        const c = els.sidebar.classList.toggle("collapsed");
+        localStorage.setItem("sidebar-collapsed", c ? "true" : "false");
+      }
     });
   }
+
+  function closeSidebar() {
+    if (isMobile() && els.sidebar && els.sidebar.classList.contains("is-open")) {
+      els.sidebar.classList.remove("is-open");
+    }
+  }
+
+  // Tap outside the open mobile drawer to close it
+  document.addEventListener("click", (e) => {
+    if (!isMobile()) return;
+    if (
+      els.sidebar &&
+      els.sidebar.classList.contains("is-open") &&
+      !els.sidebar.contains(e.target) &&
+      !els.sidebarToggleBtn.contains(e.target)
+    ) {
+      closeSidebar();
+    }
+  });
 
   // 5. Views Management
   function showView(name) {
@@ -166,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderPage(currentPage);
       showView("page");
       renderSidebar();
+      closeSidebar();
     } catch (err) {
       alert("Error loading page: " + err.message);
     }

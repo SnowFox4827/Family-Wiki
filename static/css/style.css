@@ -840,11 +840,12 @@ button, input, textarea {
     border-right: 1px solid rgba(0,0,0,0.2);
     border-bottom: none;
     padding: 20px 16px 24px;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45);
     transform: translateX(-100%);
     transition: transform 0.28s ease;
   }
   .sidebar.is-open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
   }
   .topbar { flex-wrap: wrap; gap: 10px; }
   .search-wrap { order: 3; max-width: none; flex: 1 1 100%; }
