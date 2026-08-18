@@ -567,13 +567,124 @@ button, input, textarea {
   margin: 0 0 1em;
 }
 
-.ledger-content h1, .ledger-content h2, .ledger-content h3 {
+.ledger-content h1, .ledger-content h2, .ledger-content h3,
+.ledger-content h4, .ledger-content h5, .ledger-content h6 {
   font-family: var(--font-body);
   color: var(--ink-green);
   margin-top: 1.4em;
+  margin-bottom: 0.5em;
+  line-height: 1.25;
 }
 
+.ledger-content h1 { font-size: 1.8rem; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.ledger-content h2 { font-size: 1.4rem; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.ledger-content h3 { font-size: 1.2rem; }
+.ledger-content h4 { font-size: 1.05rem; }
+.ledger-content h5, .ledger-content h6 { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
 .ledger-content ul, .ledger-content ol { margin: 0 0 1em; padding-left: 1.4em; }
+.ledger-content li { margin-bottom: 0.35em; }
+
+/* Task List Checkboxes */
+.ledger-content ul.task-list { list-style: none; padding-left: 0.2em; }
+.ledger-content li.task-item { display: flex; align-items: baseline; gap: 8px; }
+.ledger-content .task-checkbox {
+  accent-color: var(--gold);
+  cursor: default;
+  margin: 0;
+  transform: translateY(1px);
+}
+
+/* Blockquotes */
+.ledger-content blockquote {
+  margin: 1.2em 0;
+  padding: 10px 20px;
+  border-left: 3px solid var(--gold);
+  background: rgba(184, 134, 59, 0.07);
+  font-style: italic;
+  color: var(--charcoal);
+  border-radius: 0 4px 4px 0;
+}
+.ledger-content blockquote p { margin: 0.4em 0; }
+.ledger-content blockquote p:first-child { margin-top: 0; }
+.ledger-content blockquote p:last-child { margin-bottom: 0; }
+
+/* Inline Code & Code Blocks */
+.ledger-content code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: rgba(42, 36, 32, 0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--rust);
+}
+
+[data-theme="dark"] .ledger-content code {
+  background: rgba(226, 232, 240, 0.12);
+  color: var(--gold-light);
+}
+
+.ledger-content pre {
+  background: #19241e;
+  color: #e2e8f0;
+  padding: 14px 18px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 1.2em 0;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.ledger-content pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Horizontal Rules */
+.ledger-content hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 2em 0;
+}
+
+/* Tables */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.4em 0;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.ledger-table th, .ledger-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.ledger-table th {
+  background: rgba(42, 36, 32, 0.05);
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--ink-green);
+}
+
+.ledger-table tr:nth-child(even) td {
+  background: rgba(42, 36, 32, 0.02);
+}
+
+/* Strikethrough */
+.ledger-content del {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
 .ledger-content a {
   color: var(--rust);
   font-weight: 600;
