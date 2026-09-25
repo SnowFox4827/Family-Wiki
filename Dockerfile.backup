@@ -1,20 +1,15 @@
-# Sidecar service: periodically archives the wiki volume (database + uploads)
-# to a timestamped, rotating set of zip files under /backups.
-FROM alpine:3.20
+FROM python:3.11-alpine
 
-RUN apk add --no-cache sqlite bash tzdata
+WORKDIR /app
 
-ENV BACKUP_INTERVAL=86400 \
-    BACKUP_KEEP=14 \
-    BACKUP_DIR=/backups \
-    WIKI_DB_PATH=/app/data/wiki.db \
-    TZ=UTC
+RUN apk add --no-cache sqlite tzdata
 
-COPY backup.sh /usr/local/bin/backup.sh
-RUN chmod +x /usr/local/bin/backup.sh && \
-    mkdir -p /backups && \
-    echo "Backup dir: ${BACKUP_DIR}"
+COPY scripts/backup.py /app/backup.py
+RUN chmod +x /app/backup.py
 
-VOLUME ["/backups"]
+ENV DB_PATH=/app/data/wiki.db
+ENV BACKUP_DIR=/backups
+ENV RETENTION_DAYS=30
+ENV BACKUP_INTERVAL_HOURS=24
 
-CMD ["/usr/local/bin/backup.sh"]
+ENTRYPOINT ["python", "-u", "/app/backup.py"]
