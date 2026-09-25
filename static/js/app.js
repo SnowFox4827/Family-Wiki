@@ -283,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   <div class="fw-semibold">${s.name}</div>
                   <div class="small text-muted">${s.created_at}</div>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" data-restore-snap="${s.name}">Restore</button>
+                <button type="button" class="btn btn-ghost btn-sm" data-restore-snap="${s.name}">Restore</button>
               </div>`).join("")
           : '<div class="small text-muted">No snapshots available</div>';
       }
