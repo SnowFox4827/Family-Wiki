@@ -995,3 +995,19 @@ button, input, textarea {
 @media (prefers-reduced-motion: reduce) {
   .btn { transition: none; }
 }
+
+/* ---------- Backup Modal ---------- */
+.modal.hidden { display: none; }
+#backup-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+#backup-modal .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+#backup-modal .modal-dialog { position: relative; width: min(560px, 92vw); max-height: 85vh; overflow: auto; }
+#backup-modal .modal-content { background: var(--bg-surface, #fff); border: 1px solid var(--border, #ddd); border-radius: 10px; padding: 0; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+#backup-modal .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border, #ddd); }
+#backup-modal .modal-header h3 { margin: 0; font-size: 1.05rem; }
+#backup-modal .modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+#backup-modal .backup-status-card { border: 1px solid var(--border, #ddd); border-radius: 8px; padding: 10px 12px; }
+#backup-modal .backup-actions { display: flex; flex-direction: column; gap: 8px; }
+#backup-modal .backup-actions .btn { width: 100%; }
+#backup-modal .snapshots-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+#backup-modal .snapshots-list .snap-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--border, #ddd); border-radius: 6px; padding: 6px 8px; font-size: .85rem; }
+#backup-modal hr { border: none; border-top: 1px solid var(--border, #ddd); margin: 4px 0; }

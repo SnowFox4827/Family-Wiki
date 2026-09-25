@@ -1,0 +1,41 @@
+<div class="modal hidden" id="backup-modal">
+  <div class="modal-backdrop" data-close-backup></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Database Backup &amp; Restore</h3>
+        <button type="button" class="btn btn-ghost modal-close" data-close-backup>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="backup-status-card" id="backup-status-box">
+          <div class="small text-muted" id="backup-last-time">Loading status&hellip;</div>
+          <div class="small text-muted" id="backup-total-count"></div>
+        </div>
+
+        <div class="backup-actions">
+          <button type="button" class="btn btn-outline" id="btn-download-json">Download JSON Data Export (.json)</button>
+          <button type="button" class="btn btn-outline" id="btn-download-db">Download SQLite Binary (.db)</button>
+          <button type="button" class="btn btn-accent" id="btn-trigger-snapshot">Create Instant Snapshot on NAS / Server</button>
+        </div>
+
+        <hr>
+
+        <h4 class="small">Restore from Backup</h4>
+        <div class="restore-file-row">
+          <label class="small text-muted" for="backup-restore-file">Restore from file (.json or .db)</label>
+          <div class="flex gap-2">
+            <input type="file" id="backup-restore-file" accept=".json,.db,.sqlite,.sqlite3">
+            <button type="button" class="btn btn-outline danger" id="btn-restore-file">Restore File</button>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="small text-muted">Restore from server snapshot</label>
+          <div id="backup-snapshots-list" class="snapshots-list">
+            <div class="small text-muted">No snapshots available</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

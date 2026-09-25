@@ -5,6 +5,7 @@ import * as API from "./modules/api.js";
 import { initTheme } from "./modules/theme.js";
 import { renderMarkdown, escapeHtml } from "./modules/markdown.js";
 import { setupImageUpload } from "./modules/upload.js";
+import { fetchBackupStatus, triggerSnapshot, downloadBackup, restoreBackupUpload, restoreSnapshot } from "./modules/api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Initialize Theme
@@ -255,7 +256,112 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 8. Event Listeners
   if (els.newPageBtn) els.newPageBtn.addEventListener("click", () => openEditor(null));
-  if (els.backupBtn) els.backupBtn.addEventListener("click", () => { window.location.href = "/api/backup"; });
+  if (els.backupBtn) els.backupBtn.addEventListener("click", openBackupModal);
+
+  // ---------------- Backup Modal ----------------
+  async function refreshBackupModal() {
+    const timeEl = document.getElementById("backup-last-time");
+    const countEl = document.getElementById("backup-total-count");
+    const listEl = document.getElementById("backup-snapshots-list");
+    if (timeEl) timeEl.textContent = "Checking snapshots...";
+    if (countEl) countEl.textContent = "";
+    if (listEl) listEl.innerHTML = '<div class="small text-muted">Loading snapshots...</div>';
+    try {
+      const data = await fetchBackupStatus();
+      if (data.latest_snapshot) {
+        timeEl.textContent = `Last snapshot: ${data.latest_snapshot.created_at}`;
+        countEl.textContent = `Total snapshots: ${data.total_snapshots} (Retention: ${data.retention_days} days)`;
+      } else {
+        timeEl.textContent = "No automated snapshots recorded yet.";
+        countEl.textContent = `Retention policy: ${data.retention_days} days`;
+      }
+      if (listEl) {
+        listEl.innerHTML = data.snapshots.length
+          ? data.snapshots.map(s => `
+              <div class="snap-row">
+                <div>
+                  <div class="fw-semibold">${s.name}</div>
+                  <div class="small text-muted">${s.created_at}</div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" data-restore-snap="${s.name}">Restore</button>
+              </div>`).join("")
+          : '<div class="small text-muted">No snapshots available</div>';
+      }
+    } catch (e) {
+      if (timeEl) timeEl.textContent = "Snapshot storage ready.";
+      if (listEl) listEl.innerHTML = '<div class="small text-muted">No snapshots available</div>';
+    }
+  }
+
+  function openBackupModal() {
+    const modal = document.getElementById("backup-modal");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    refreshBackupModal();
+  }
+
+  function closeBackupModal() {
+    const modal = document.getElementById("backup-modal");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  document.querySelectorAll("[data-close-backup]").forEach(el =>
+    el.addEventListener("click", closeBackupModal));
+
+  const btnJson = document.getElementById("btn-download-json");
+  if (btnJson) btnJson.addEventListener("click", () => downloadBackup("json"));
+  const btnDb = document.getElementById("btn-download-db");
+  if (btnDb) btnDb.addEventListener("click", () => downloadBackup("db"));
+
+  const btnSnap = document.getElementById("btn-trigger-snapshot");
+  if (btnSnap) btnSnap.addEventListener("click", async () => {
+    const orig = btnSnap.textContent;
+    btnSnap.disabled = true;
+    btnSnap.textContent = "Creating snapshot...";
+    try {
+      const res = await triggerSnapshot();
+      if (res.success) await refreshBackupModal();
+      else alert(`Snapshot error: ${res.error || "Failed"}`);
+    } catch (err) {
+      alert("Network error while requesting snapshot.");
+    } finally {
+      btnSnap.disabled = false;
+      btnSnap.textContent = orig;
+    }
+  });
+
+  const btnRestoreFile = document.getElementById("btn-restore-file");
+  if (btnRestoreFile) btnRestoreFile.addEventListener("click", async () => {
+    const input = document.getElementById("backup-restore-file");
+    const file = input && input.files && input.files[0];
+    if (!file) { alert("Please select a backup file first."); return; }
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (![".json", ".db", ".sqlite", ".sqlite3"].includes(ext)) {
+      alert("Unsupported file type. Please use .json, .db, .sqlite, or .sqlite3.");
+      return;
+    }
+    if (!confirm("This will REPLACE all current data with the contents of the backup file. A safety snapshot of your current data will be taken first. Continue?")) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await restoreBackupUpload(formData);
+      if (res.success) { alert(res.message || "Restore completed successfully."); closeBackupModal(); await refreshIndex(); }
+      else alert(`Restore failed: ${res.error || "Unknown error"}`);
+    } catch (err) { alert("Network error while restoring."); }
+  });
+
+  const snapList = document.getElementById("backup-snapshots-list");
+  if (snapList) snapList.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-restore-snap]");
+    if (!btn) return;
+    const name = btn.dataset.restoreSnap;
+    if (!confirm(`This will REPLACE all current data with the snapshot "${name}". A safety snapshot of your current data will be taken first. Continue?`)) return;
+    try {
+      const res = await restoreSnapshot(name);
+      if (res.success) { alert(res.message || "Restore completed successfully."); closeBackupModal(); await refreshIndex(); }
+      else alert(`Restore failed: ${res.error || "Unknown error"}`);
+    } catch (err) { alert("Network error while restoring."); }
+  });
   if (els.emptyNewPageBtn) els.emptyNewPageBtn.addEventListener("click", () => openEditor(null));
 
   if (els.editPageBtn) {
