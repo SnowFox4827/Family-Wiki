@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyNewPageBtn: document.getElementById("empty-new-page-btn"),
     editPageBtn: document.getElementById("edit-page-btn"),
     deletePageBtn: document.getElementById("delete-page-btn"),
+    downloadPageBtn: document.getElementById("download-page-btn"),
     cancelEditBtn: document.getElementById("cancel-edit-btn"),
     editorForm: document.getElementById("editor-form"),
     fieldTitle: document.getElementById("field-title"),
@@ -284,6 +285,33 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Failed to delete page: " + err.message);
         }
       }
+    });
+  }
+
+  if (els.downloadPageBtn) {
+    els.downloadPageBtn.addEventListener("click", () => {
+      if (!currentPage) return;
+      const safeTitle = currentPage.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") || "article";
+      const meta = [
+        `# ${currentPage.title}`,
+        "",
+        `- **Category:** ${currentPage.category || "Uncategorized"}`,
+        `- **Tags:** ${(currentPage.tags || []).join(", ") || "none"}`,
+        `- **Author:** ${currentPage.author || "unknown"}`,
+        `- **Last updated:** ${currentPage.updated_at || "unknown"}`,
+        "",
+        "---",
+        "",
+      ].join("\n");
+      const blob = new Blob([meta + (currentPage.content || "")], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeTitle}.md`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     });
   }
 
