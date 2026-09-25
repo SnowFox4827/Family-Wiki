@@ -9,5 +9,19 @@ services:
       - wiki-data:/app/data
     restart: unless-stopped
 
+  backup:
+    build:
+      context: .
+      dockerfile: Dockerfile.backup
+    environment:
+      - WIKI_DB_PATH=/app/data/wiki.db
+      - BACKUP_INTERVAL=86400   # every 24h
+      - BACKUP_KEEP=14          # keep the 14 most recent zips
+    volumes:
+      - wiki-data:/app/data:ro
+      - wiki-backups:/backups
+    restart: unless-stopped
+
 volumes:
   wiki-data:
+  wiki-backups:
