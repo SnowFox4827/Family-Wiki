@@ -1037,3 +1037,12 @@ button, input, textarea {
 .mt-3 { margin-top: 14px; }
 .fw-semibold { font-weight: 600; }
 .btn-sm { padding: 6px 12px; font-size: .75rem; }
+
+/* Backup button in topbar: always readable on the dark leather topbar */
+#backup-btn {
+  color: #FBF7EC;
+  border-color: rgba(251, 247, 236, 0.45);
+}
+#backup-btn:hover {
+  background: rgba(251, 247, 236, 0.15);
+}
