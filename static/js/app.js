@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pageUpdated: document.getElementById("page-updated"),
     pageContent: document.getElementById("page-content"),
     newPageBtn: document.getElementById("new-page-btn"),
+    backupBtn: document.getElementById("backup-btn"),
     emptyNewPageBtn: document.getElementById("empty-new-page-btn"),
     editPageBtn: document.getElementById("edit-page-btn"),
     deletePageBtn: document.getElementById("delete-page-btn"),
@@ -254,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 8. Event Listeners
   if (els.newPageBtn) els.newPageBtn.addEventListener("click", () => openEditor(null));
+  if (els.backupBtn) els.backupBtn.addEventListener("click", () => { window.location.href = "/api/backup"; });
   if (els.emptyNewPageBtn) els.emptyNewPageBtn.addEventListener("click", () => openEditor(null));
 
   if (els.editPageBtn) {

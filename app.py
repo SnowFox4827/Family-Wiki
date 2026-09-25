@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, g, jsonify, request, render_template, send_from_directory
+from flask import Flask, g, jsonify, request, render_template, send_from_directory, send_file
 import uuid
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -349,6 +349,44 @@ def upload_file():
         "filename": filename,
         "original_name": file.filename
     }), 201
+
+
+# ---------------------------------------------------------------------------
+# API: backup
+# ---------------------------------------------------------------------------
+
+@app.route("/api/backup")
+def backup_download():
+    """Download a zip containing the database and all uploads."""
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        if DB_PATH.exists():
+            # copy while connection may be open: use SQLite's backup via a temp file
+            import sqlite3 as _sq
+            tmp = DB_PATH.with_suffix(".backup-tmp")
+            src = _sq.connect(DB_PATH)
+            dst = _sq.connect(tmp)
+            with dst:
+                src.backup(dst)
+            src.close()
+            dst.close()
+            zf.write(tmp, "wiki.db")
+            tmp.unlink()
+        if UPLOAD_DIR.exists():
+            for f in UPLOAD_DIR.iterdir():
+                if f.is_file():
+                    zf.write(f, f"uploads/{f.name}")
+    buf.seek(0)
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return send_file(
+        buf,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"family-wiki-backup-{stamp}.zip",
+    )
 
 
 @app.route("/uploads/<path:filename>")
