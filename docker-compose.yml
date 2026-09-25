@@ -13,13 +13,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backup
+    env_file: .env                       # optional; see .env.example
     environment:
       - WIKI_DB_PATH=/app/data/wiki.db
-      - BACKUP_INTERVAL=86400   # every 24h
-      - BACKUP_KEEP=14          # keep the 14 most recent zips
+      - BACKUP_INTERVAL=${BACKUP_INTERVAL:-86400}
+      - BACKUP_KEEP=${BACKUP_KEEP:-14}
+      - BACKUP_DIR=${BACKUP_DIR:-/backups}
+      - NAS_BACKUP_TARGET=${NAS_BACKUP_TARGET:-}
     volumes:
       - wiki-data:/app/data:ro
       - wiki-backups:/backups
+      # Mount your NAS here if you want backups copied off-container:
+      # - /mnt/nas/wiki-backups:/mnt/nas/wiki-backups
     restart: unless-stopped
 
 volumes:
