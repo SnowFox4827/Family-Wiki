@@ -410,7 +410,7 @@ if __name__ == "__main__":
 # API: backup / restore (snapshot management)
 # -------------------------------------------------------------
 def _snapshots_dir() -> Path:
-    return Path(os.environ.get("BACKUP_HOST_DIR", "backups"))
+    return DB_PATH.parent / "backups"
 
 def _snapshot_meta():
     d = _snapshots_dir()
