@@ -6,6 +6,7 @@ services:
       - "${WIKI_PORT:-5005}:5000"
     volumes:
       - ${DATA_DIR:-./data}:/app/data
+      - ${BACKUP_HOST_DIR:-./backups}:/app/backups
     restart: unless-stopped
 
   backup-sidecar:
