@@ -402,10 +402,6 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 init_db()
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, port=port, host="0.0.0.0")
-
 # -------------------------------------------------------------
 # API: backup / restore (snapshot management)
 # -------------------------------------------------------------
@@ -572,3 +568,8 @@ def backup_restore():
     candidate = src / "wiki.db" if (src / "wiki.db").exists() else src
     ok, msg = _restore_from(candidate)
     return jsonify({"success": ok, "message" if ok else "error": msg}), (200 if ok else 500)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, port=port, host="0.0.0.0")
