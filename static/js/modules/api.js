@@ -66,3 +66,33 @@ export async function uploadImage(file) {
   if (!res.ok) throw new Error(body.error || "Upload failed");
   return body;
 }
+
+// Backup & restore
+export async function fetchBackupStatus() {
+  const res = await fetch("/api/backup/status");
+  if (!res.ok) throw new Error("Failed to load backup status");
+  return await res.json();
+}
+
+export async function triggerSnapshot() {
+  const res = await fetch("/api/backup/snapshot", { method: "POST" });
+  return await res.json();
+}
+
+export function downloadBackup(format) {
+  window.location.href = `/api/backup/export?format=${encodeURIComponent(format)}`;
+}
+
+export async function restoreBackupUpload(formData) {
+  const res = await fetch("/api/backup/restore", { method: "POST", body: formData });
+  return await res.json();
+}
+
+export async function restoreSnapshot(name) {
+  const res = await fetch("/api/backup/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `snapshot=${encodeURIComponent(name)}`,
+  });
+  return await res.json();
+}

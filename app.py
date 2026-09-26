@@ -4,8 +4,12 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, g, jsonify, request, render_template, send_from_directory
+from flask import Flask, g, jsonify, request, render_template, send_from_directory, send_file
 import uuid
+import json
+import shutil
+import hashlib
+import tempfile
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("WIKI_DB_PATH", BASE_DIR / "data" / "wiki.db"))
@@ -351,6 +355,44 @@ def upload_file():
     }), 201
 
 
+# ---------------------------------------------------------------------------
+# API: backup
+# ---------------------------------------------------------------------------
+
+@app.route("/api/backup")
+def backup_download():
+    """Download a zip containing the database and all uploads."""
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        if DB_PATH.exists():
+            # copy while connection may be open: use SQLite's backup via a temp file
+            import sqlite3 as _sq
+            tmp = DB_PATH.with_suffix(".backup-tmp")
+            src = _sq.connect(DB_PATH)
+            dst = _sq.connect(tmp)
+            with dst:
+                src.backup(dst)
+            src.close()
+            dst.close()
+            zf.write(tmp, "wiki.db")
+            tmp.unlink()
+        if UPLOAD_DIR.exists():
+            for f in UPLOAD_DIR.iterdir():
+                if f.is_file():
+                    zf.write(f, f"uploads/{f.name}")
+    buf.seek(0)
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return send_file(
+        buf,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"family-wiki-backup-{stamp}.zip",
+    )
+
+
 @app.route("/uploads/<path:filename>")
 def serve_upload(filename):
     return send_from_directory(UPLOAD_DIR, filename)
@@ -363,3 +405,170 @@ init_db()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, port=port, host="0.0.0.0")
+
+# -------------------------------------------------------------
+# API: backup / restore (snapshot management)
+# -------------------------------------------------------------
+def _snapshots_dir() -> Path:
+    return Path(os.environ.get("BACKUP_HOST_DIR", "backups"))
+
+def _snapshot_meta():
+    d = _snapshots_dir()
+    snaps = []
+    if d.is_dir():
+        for entry in sorted(d.glob("snapshot_*"), reverse=True):
+            if entry.is_dir():
+                db_f = entry / "wiki.db"
+                snaps.append({
+                    "name": entry.name,
+                    "created_at": datetime.fromtimestamp(entry.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    "has_db": db_f.exists(),
+                    "size": sum(f.stat().st_size for f in entry.rglob("*") if f.is_file()),
+                })
+    return snaps
+
+def _create_snapshot():
+    d = _snapshots_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    snap = d / f"snapshot_{stamp}"
+    snap.mkdir(exist_ok=True)
+
+    # 1. SQLite online backup
+    src = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    dst = sqlite3.connect(snap / "wiki.db")
+    with dst:
+        src.backup(dst)
+    dst.close(); src.close()
+
+    # 2. JSON export from the snapshot
+    conn = sqlite3.connect(snap / "wiki.db"); conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    pages = [dict(r) for r in cur.execute("SELECT * FROM pages ORDER BY id ASC").fetchall()]
+    revisions = [dict(r) for r in cur.execute("SELECT * FROM revisions ORDER BY id ASC").fetchall()]
+    conn.close()
+    json_data = {"metadata": {"version": "1.0", "exported_at": datetime.now().isoformat(),
+                              "generator": "Family Wiki", "total_pages": len(pages),
+                              "total_revisions": len(revisions)},
+                 "pages": pages, "revisions": revisions}
+    with open(snap / "data_export.json", "w", encoding="utf-8") as f:
+        json.dump(json_data, f, indent=2)
+    with open(d / "latest.json", "w", encoding="utf-8") as f:
+        json.dump(json_data, f, indent=2)
+
+    # 3. uploads
+    up = DB_PATH.parent / "uploads"
+    if up.is_dir() and any(up.iterdir()):
+        shutil.copytree(up, snap / "uploads")
+
+    # 4. checksums
+    with open(snap / "checksum.sha256", "w", encoding="utf-8") as cf:
+        for fname in ["wiki.db", "data_export.json"]:
+            fp = snap / fname
+            if fp.exists():
+                h = hashlib.sha256()
+                with open(fp, "rb") as fh:
+                    while chunk := fh.read(8192):
+                        h.update(chunk)
+                cf.write(f"{h.hexdigest()}  {fname}\n")
+
+    return snap.name
+
+def _restore_from(source_path: Path):
+    """Replace current DB with the given .db or .json file; safety-snapshot first."""
+    if not source_path.exists():
+        return False, "Source not found"
+
+    # safety snapshot first
+    try:
+        _create_snapshot()
+    except Exception as e:
+        return False, f"Failed to take safety snapshot: {e}"
+
+    if source_path.suffix == ".json":
+        with open(source_path, encoding="utf-8") as f:
+            data = json.load(f)
+        pages = data.get("pages", [])
+        revisions = data.get("revisions", [])
+        conn = get_db()
+        conn.execute("DELETE FROM revisions"); conn.execute("DELETE FROM pages")
+        for p in pages:
+            conn.execute("INSERT INTO pages (title, slug, category, tags, content, author, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
+                (p.get("title"), p.get("slug") or slugify(p.get("title") or "page"), p.get("category") or "Uncategorized",
+                 p.get("tags") or "", p.get("content") or "", p.get("author") or "",
+                 p.get("created_at"), p.get("updated_at")))
+        for r in revisions:
+            conn.execute("INSERT INTO revisions (title, content, author, saved_at) VALUES (?,?,?,?)",
+                (r.get("title"), r.get("content") or "", r.get("author") or "", r.get("saved_at")))
+        conn.commit()
+    elif source_path.suffix in (".db", ".sqlite", ".sqlite3"):
+        shutil.copy2(source_path, DB_PATH)
+    else:
+        return False, "Unsupported file type"
+
+    return True, "Restore completed successfully."
+
+
+@app.route("/api/backup/status")
+def backup_status():
+    snaps = _snapshot_meta()
+    latest = snaps[0] if snaps else None
+    return jsonify({
+        "snapshots": snaps,
+        "latest_snapshot": latest,
+        "total_snapshots": len(snaps),
+        "retention_days": int(os.environ.get("RETENTION_DAYS", 30)),
+    })
+
+@app.route("/api/backup/snapshot", methods=["POST"])
+def backup_snapshot():
+    try:
+        name = _create_snapshot()
+        return jsonify({"success": True, "name": name})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/backup/export")
+def backup_export():
+    fmt = request.args.get("format", "db")
+    if fmt == "json":
+        d = _snapshots_dir()
+        latest = d / "latest.json"
+        if not latest.exists():
+            _create_snapshot()
+        return send_file(d / "latest.json", as_attachment=True, download_name="family-wiki-export.json")
+    # db format
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    tmp = Path(tempfile.gettempdir()) / f"wiki-{stamp}.db"
+    src = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    dst = sqlite3.connect(tmp)
+    with dst:
+        src.backup(dst)
+    dst.close(); src.close()
+    resp = send_file(tmp, as_attachment=True, download_name=f"family-wiki-{stamp}.db")
+    @resp.call_on_close
+    def _cleanup():
+        try: tmp.unlink()
+        except Exception: pass
+    return resp
+
+@app.route("/api/backup/restore", methods=["POST"])
+def backup_restore():
+    file = request.files.get("file")
+    if file and file.filename:
+        ext = Path(file.filename).suffix.lower()
+        if ext not in (".json", ".db", ".sqlite", ".sqlite3"):
+            return jsonify({"success": False, "error": "Unsupported file type"}), 400
+        tmp = Path(tempfile.gettempdir()) / f"restore-{uuid.uuid4().hex}{ext}"
+        file.save(tmp)
+        ok, msg = _restore_from(tmp)
+        try: tmp.unlink()
+        except Exception: pass
+        return jsonify({"success": ok, "message" if ok else "error": msg}), (200 if ok else 500)
+    name = request.form.get("snapshot")
+    if not name or "/" in name or ".." in name:
+        return jsonify({"success": False, "error": "Invalid snapshot"}), 400
+    src = _snapshots_dir() / name
+    candidate = src / "wiki.db" if (src / "wiki.db").exists() else src
+    ok, msg = _restore_from(candidate)
+    return jsonify({"success": ok, "message" if ok else "error": msg}), (200 if ok else 500)

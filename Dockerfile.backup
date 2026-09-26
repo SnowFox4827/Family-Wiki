@@ -1,0 +1,15 @@
+FROM python:3.11-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache sqlite tzdata
+
+COPY scripts/backup.py /app/backup.py
+RUN chmod +x /app/backup.py
+
+ENV DB_PATH=/app/data/wiki.db
+ENV BACKUP_DIR=/backups
+ENV RETENTION_DAYS=30
+ENV BACKUP_INTERVAL_HOURS=24
+
+ENTRYPOINT ["python", "-u", "/app/backup.py"]

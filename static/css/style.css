@@ -995,3 +995,54 @@ button, input, textarea {
 @media (prefers-reduced-motion: reduce) {
   .btn { transition: none; }
 }
+
+/* ---------- Backup Modal ---------- */
+.modal.hidden { display: none; }
+#backup-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+#backup-modal .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+#backup-modal .modal-dialog { position: relative; width: min(560px, 92vw); max-height: 85vh; overflow: auto; }
+#backup-modal .modal-content {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0;
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  color: var(--charcoal);
+}
+#backup-modal .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+#backup-modal .modal-header h3 { margin: 0; font-size: 1.05rem; font-family: var(--font-display); }
+#backup-modal .modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+#backup-modal .backup-status-card { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; background: var(--parchment); }
+#backup-modal .backup-actions { display: flex; flex-direction: column; gap: 8px; }
+#backup-modal .backup-actions .btn { width: 100%; justify-content: center; }
+#backup-modal .snapshots-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+#backup-modal .snapshots-list .snap-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; font-size: .85rem;
+}
+#backup-modal .snap-row:hover { background: var(--line); }
+#backup-modal hr { border: none; border-top: 1px solid var(--line); margin: 4px 0; }
+#backup-modal .restore-file-row .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#backup-modal input[type="file"] { color: var(--charcoal); max-width: 100%; }
+#backup-modal input[type="file"]::file-selector-button {
+  font-family: var(--font-body); font-size: .78rem; letter-spacing: .05em;
+  padding: 6px 12px; border-radius: 3px; border: 1px solid var(--line);
+  background: transparent; color: var(--charcoal); cursor: pointer; margin-right: 10px;
+}
+[data-theme="dark"] #backup-modal input[type="file"]::file-selector-button { border-color: rgba(226,232,240,.25); }
+
+/* Small helpers used by the backup modal */
+.small { font-size: .8rem; }
+.text-muted { color: var(--text-muted); }
+.mt-3 { margin-top: 14px; }
+.fw-semibold { font-weight: 600; }
+.btn-sm { padding: 6px 12px; font-size: .75rem; }
+
+/* Backup button in topbar: always readable on the dark leather topbar */
+#backup-btn {
+  color: #FBF7EC;
+  border-color: rgba(251, 247, 236, 0.45);
+}
+#backup-btn:hover {
+  background: rgba(251, 247, 236, 0.15);
+}

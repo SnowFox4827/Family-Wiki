@@ -1,13 +1,26 @@
 services:
   wiki:
     build: .
+    container_name: family-wiki
     ports:
-      - "5005:5000"
-    environment:
-      - WIKI_DB_PATH=/app/data/wiki.db
+      - "${WIKI_PORT:-5005}:5000"
     volumes:
-      - wiki-data:/app/data
+      - ${DATA_DIR:-./data}:/app/data
     restart: unless-stopped
 
-volumes:
-  wiki-data:
+  backup-sidecar:
+    build:
+      context: .
+      dockerfile: Dockerfile.backup
+    container_name: family-wiki-backup
+    environment:
+      - DB_PATH=/app/data/wiki.db
+      - BACKUP_DIR=/backups
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - BACKUP_INTERVAL_HOURS=${BACKUP_INTERVAL_HOURS:-24}
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data:ro
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+    depends_on:
+      - wiki
+    restart: unless-stopped
